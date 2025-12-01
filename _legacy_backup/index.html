@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winners Superfrip | Vintage & Streetwear</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="index.html" class="logo">Winners Superfrip</a>
+                <div class="menu-toggle" id="mobile-menu">
+                    <span>☰</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html" class="active">Accueil</a></li>
+                    <li><a href="shop.html">Boutique</a></li>
+                    <li><a href="how-it-works.html">Comment ça marche</a></li>
+                    <li><a href="about.html">À propos</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Vintage, Streetwear & <br>Nouvelles Arrivées d'Europe</h1>
+            <p>La mode durable à petit prix. Découvrez notre sélection unique de vêtements seconde main et neufs.</p>
+            <div class="hero-buttons">
+                <a href="shop.html" class="btn">Voir la boutique</a>
+                <a href="how-it-works.html" class="btn btn-secondary">Comment ça marche</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Sections -->
+    <section class="featured container">
+        <h2 class="section-title">Nos Univers</h2>
+        <div class="categories-grid">
+            <div class="category-card" onclick="window.location.href='shop.html?origin=europe'">
+                <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=600&q=80" alt="Europe">
+                <div class="category-info">
+                    <h3>Arrivages Europe</h3>
+                    <p>Pièces uniques importées</p>
+                </div>
+            </div>
+            <div class="category-card" onclick="window.location.href='shop.html?condition=neuf'">
+                <img src="https://images.unsplash.com/photo-1485230946086-1d99d5266642?auto=format&fit=crop&w=600&q=80" alt="Neuf">
+                <div class="category-info">
+                    <h3>Articles Neufs</h3>
+                    <p>Jamais portés, prix cassés</p>
+                </div>
+            </div>
+            <div class="category-card" onclick="window.location.href='shop.html?condition=seconde_main'">
+                <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80" alt="Seconde Main">
+                <div class="category-info">
+                    <h3>Seconde Main</h3>
+                    <p>Vintage & Éco-responsable</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- New Arrivals Preview (Dynamic) -->
+    <section class="new-arrivals container">
+        <h2 class="section-title">Dernières Pépites</h2>
+        <div class="product-grid" id="featured-products">
+            <!-- Products will be injected here by JS -->
+        </div>
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="shop.html" class="btn">Tout voir</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-col">
+                <h3>Winners Superfrip</h3>
+                <p>Votre destination pour la mode vintage et streetwear à prix abordable.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Liens Rapides</h3>
+                <ul>
+                    <li><a href="shop.html">Boutique</a></li>
+                    <li><a href="how-it-works.html">Comment réserver</a></li>
+                    <li><a href="about.html">Notre histoire</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Contact</h3>
+                <ul>
+                    <li>📍 Monastir, Tunisie</li>
+                    <li>📞 +216 XX XXX XXX</li>
+                    <li>📸 @winners_superfrip</li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2023 Winners Superfrip. Tous droits réservés.
+        </div>
+    </footer>
+
+    <script src="products.js"></script>
+    <script>
+        // Simple script to toggle mobile menu
+        document.getElementById('mobile-menu').addEventListener('click', function() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        });
+
+        // Simple script to load featured products
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('featured-products');
+            // Get first 3 new arrivals
+            const featured = window.products.filter(p => p.isNewArrival).slice(0, 3);
+            
+            featured.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <div class="product-image">
+                        <img src="${product.image}" alt="${product.name}">
+                        ${product.isNewArrival ? '<span class="badge new">Nouveau</span>' : ''}
+                    </div>
+                    <div class="product-info">
+                        <h4>${product.name}</h4>
+                        <p class="price">${product.price} ${product.currency}</p>
+                        <a href="product.html?id=${product.id}" class="btn-sm">Voir</a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        });
+    </script>
+</body>
+</html>
