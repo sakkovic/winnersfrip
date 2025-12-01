@@ -1,53 +1,68 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Instagram } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Video } from 'lucide-react';
 import './StaticPages.css';
 
 const Contact = () => {
     return (
         <div className="static-page container">
-            <h1 className="page-title">Contactez-nous</h1>
+            <div className="contact-frida-layout">
+                <div className="contact-frida-content">
+                    {/* Left Column: Info & Hours */}
+                    <div className="frida-info-left">
+                        <h1 className="frida-title">WINNERS</h1>
 
-            <div className="contact-layout">
-                <div className="contact-info">
-                    <h3>Nos Coordonnées</h3>
-                    <div className="contact-item">
-                        <Phone size={20} />
-                        <span>+216 XX XXX XXX</span>
-                    </div>
-                    <div className="contact-item">
-                        <Mail size={20} />
-                        <span>contact@winners-superfrip.com</span>
-                    </div>
-                    <div className="contact-item">
-                        <MapPin size={20} />
-                        <span>Monastir, Tunisie</span>
-                    </div>
-                    <div className="contact-item">
-                        <Instagram size={20} />
-                        <span>@winners_superfrip</span>
+                        <div className="frida-address-section">
+                            <p>MONASTIR, TUNISIE</p>
+                            <p>AVENUE DE LA RÉPUBLIQUE</p>
+                            <p>5000</p>
+                        </div>
+
+                        <div className="frida-contact-section">
+                            <p className="frida-phone">+216 XX XXX XXX</p>
+                            <p className="frida-email">CONTACT@WINNERS.COM</p>
+                        </div>
+
+                        <div className="frida-social-icons">
+                            <a href="#"><Facebook size={24} /></a>
+                            <a href="#"><Instagram size={24} /></a>
+                        </div>
+
+                        <div className="frida-hours-section">
+                            <h3>BUSINESS HOURS</h3>
+                            <div className="hours-grid">
+                                <div className="hours-col">
+                                    <p className="day-range">SUNDAY TO WEDNESDAY</p>
+                                    <p className="time-range">9:00 A.M. TO 9:00 P.M.</p>
+                                </div>
+                                <div className="hours-col">
+                                    <p className="day-range">THURSDAY TO SATURDAY</p>
+                                    <p className="time-range">9:00 A.M. TO 10:00 P.M.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="frida-footer-note">
+                            <p>© {new Date().getFullYear()} WINNERS SUPERFRIP</p>
+                        </div>
                     </div>
 
-                    <div className="map-placeholder">
-                        <p>Carte Google Maps ici</p>
+                    {/* Right Column: Map */}
+                    <div className="frida-map-right">
+                        <div className="map-frame">
+                            <iframe 
+                                title="Location Map"
+                                width="100%" 
+                                height="100%" 
+                                frameBorder="0" 
+                                scrolling="no" 
+                                marginHeight="0" 
+                                marginWidth="0" 
+                                src="https://maps.google.com/maps?q=QRCM+5H5,+Monastir,+Tunisie&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                                style={{ border: 0, display: 'block' }}
+                            ></iframe>
+                        </div>
                     </div>
                 </div>
-
-                <form className="contact-form">
-                    <h3>Envoyez-nous un message</h3>
-                    <div className="form-group">
-                        <label>Nom</label>
-                        <input type="text" required />
-                    </div>
-                    <div className="form-group">
-                        <label>Email</label>
-                        <input type="email" required />
-                    </div>
-                    <div className="form-group">
-                        <label>Message</label>
-                        <textarea rows="5" required></textarea>
-                    </div>
-                    <button type="submit" className="btn">Envoyer</button>
-                </form>
             </div>
         </div>
     );

@@ -137,9 +137,15 @@ const ProductDetails = () => {
                     </div>
 
                     <div className="product-actions">
-                        <button className="btn btn-lg" onClick={() => setIsModalOpen(true)}>
-                            Réserver cet article
-                        </button>
+                        {product.status === 'reserved' ? (
+                            <button className="btn btn-lg btn-disabled" disabled>
+                                Réservé
+                            </button>
+                        ) : (
+                            <button className="btn btn-lg" onClick={() => setIsModalOpen(true)}>
+                                Réserver cet article
+                            </button>
+                        )}
                         <p className="secure-text"><Check size={16} /> Réservation gratuite & sans engagement</p>
                     </div>
                 </div>

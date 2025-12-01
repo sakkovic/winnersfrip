@@ -7,7 +7,7 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
 import Admin from './pages/Admin';
-import Login from './pages/Login';
+import Auth from './pages/Auth';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import HowItWorks from './pages/HowItWorks';
@@ -26,7 +26,8 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Auth />} />
+          <Route path="/signup" element={<Auth />} />
           <Route
             path="/admin"
             element={

@@ -37,6 +37,8 @@ body {
   background-color: var(--bg-color);
   color: var(--text-main);
   line-height: 1.6;
+  padding-top: 80px;
+  /* Space for fixed header */
 }
 
 h1,

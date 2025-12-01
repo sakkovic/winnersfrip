@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
@@ -9,8 +8,14 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, loginWithGoogle, userRole } = useAuth();
     const navigate = useNavigate();
+
+    // Redirect if already logged in
+    React.useEffect(() => {
+        if (userRole === 'admin') navigate('/admin');
+        if (userRole === 'client') navigate('/shop');
+    }, [userRole, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,61 +24,68 @@ const Login = () => {
             setError('');
             setLoading(true);
             await login(email, password);
-            navigate('/admin');
+            // Navigation handled by useEffect
         } catch (err) {
             console.error("Login error:", err);
             setError('Échec de la connexion. Vérifiez vos identifiants.');
-        } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <div className="login-header">
-                    <div className="icon-bg">
-                        <Lock size={32} color="white" />
+        <div className="auth-container">
+            <div className="auth-box">
+                {/* Form Side */}
+                <div className="auth-form-side">
+                    <div className="login-card">
+                        <div className="login-header">
+                            <h2>Se Connecter</h2>
+                            <div className="social-login">
+                                <button className="btn-social-icon" onClick={loginWithGoogle} title="Google">
+                                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+                                </button>
+                            </div>
+                            <div className="divider"><span>ou utiliser votre email</span></div>
+                        </div>
+
+                        {error && <div className="alert-error">{error}</div>}
+
+                        <form onSubmit={handleSubmit} className="login-form">
+                            <div className="form-group">
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <input
+                                    type="password"
+                                    placeholder="Mot de passe"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <button type="submit" className="btn-login" disabled={loading}>
+                                {loading ? 'Connexion...' : 'SE CONNECTER'}
+                            </button>
+                        </form>
                     </div>
-                    <h2>Administration</h2>
-                    <p>Connectez-vous pour gérer la boutique</p>
                 </div>
 
-                {error && <div className="alert-error">{error}</div>}
-
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label>Email</label>
-                        <div className="input-icon">
-                            <Mail size={18} />
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                placeholder="admin@example.com"
-                            />
-                        </div>
+                {/* Info Side */}
+                <div className="auth-info-side">
+                    <div className="auth-info-content">
+                        <h2>Bonjour, Ami !</h2>
+                        <p>Entrez vos informations personnelles et commencez votre voyage avec nous</p>
+                        <button className="btn-ghost" onClick={() => navigate('/signup')}>
+                            S'INSCRIRE
+                        </button>
                     </div>
-
-                    <div className="form-group">
-                        <label>Mot de passe</label>
-                        <div className="input-icon">
-                            <Lock size={18} />
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    </div>
-
-                    <button type="submit" className="btn-login" disabled={loading}>
-                        {loading ? 'Connexion...' : 'Se connecter'}
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
     );

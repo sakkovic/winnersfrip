@@ -9,189 +9,70 @@ import './Admin.css';
 const Admin = () => {
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [view, setView] = useState('list'); // 'list' or 'form'
-    const [editingId, setEditingId] = useState(null);
+    const [activeTab, setActiveTab] = useState('products'); // 'products' or 'reservations'
+    const [reservations, setReservations] = useState([]);
 
-    // Dashboard Filters
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState('all');
-
-    // Form State
-    const initialFormState = {
-        name: '',
-        price: '',
-        category: 'hauts',
-        size: 'M',
-        condition: 'seconde_main',
-        origin: 'europe',
-        style: 'streetwear',
-        gender: 'unisexe',
-        color: 'noir',
-        description: '',
-        isNewArrival: false
-    };
-
-    const [formData, setFormData] = useState(initialFormState);
-    const [previewImages, setPreviewImages] = useState([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [uploadError, setUploadError] = useState(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const fileInputRef = useRef(null);
-
-    // Fetch Products
-    const fetchProducts = async () => {
+    // Fetch Reservations
+    const fetchReservations = async () => {
         setIsLoading(true);
         try {
-            const querySnapshot = await getDocs(collection(db, "products"));
-            const productsData = querySnapshot.docs.map(doc => ({
+            const querySnapshot = await getDocs(collection(db, "reservations"));
+            const resData = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            setProducts(productsData);
+            // Sort by date desc
+            resData.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+            setReservations(resData);
         } catch (error) {
-            console.error("Error fetching products:", error);
-            alert("Erreur lors du chargement des produits.");
+            console.error("Error fetching reservations:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (activeTab === 'products') fetchProducts();
+        if (activeTab === 'reservations') fetchReservations();
+    }, [activeTab]);
 
-    // Filtered Products
-    const filteredProducts = products.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
-        return matchesSearch && matchesCategory;
-    });
-
-    // CRUD Actions
-    const handleDelete = async (id) => {
-        if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
+    // Reservation Actions
+    const handleCancelReservation = async (reservation) => {
+        if (!window.confirm("Annuler cette réservation et remettre le produit en vente ?")) return;
         try {
-            await deleteDoc(doc(db, "products", id));
-            setProducts(prev => prev.filter(p => p.id !== id));
-            alert("Produit supprimé !");
+            // 1. Update Reservation status
+            await updateDoc(doc(db, "reservations", reservation.id), {
+                status: 'cancelled'
+            });
+            // 2. Update Product status
+            await updateDoc(doc(db, "products", reservation.productId), {
+                status: 'available',
+                reservedBy: null
+            });
+            alert("Réservation annulée.");
+            fetchReservations();
         } catch (error) {
-            console.error("Error deleting product:", error);
-            alert("Erreur lors de la suppression.");
+            console.error("Error cancelling reservation:", error);
+            alert("Erreur lors de l'annulation.");
         }
     };
 
-    const startEdit = (product) => {
-        setEditingId(product.id);
-        setFormData({
-            name: product.name,
-            price: product.price,
-            category: product.category,
-            size: product.size,
-            condition: product.condition,
-            origin: product.origin,
-            style: product.style,
-            gender: product.gender,
-            color: product.color,
-            description: product.description,
-            isNewArrival: product.isNewArrival || false
-        });
-
-        // Handle images
-        const images = product.images || (product.image ? [product.image] : []);
-        setPreviewImages(images.map(url => ({ url, name: 'Image existante' })));
-
-        setView('form');
-    };
-
-    const startCreate = () => {
-        setEditingId(null);
-        setFormData(initialFormState);
-        setPreviewImages([]);
-        setView('form');
-    };
-
-    // Form Handlers
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
-
-    const handleFileUpload = async (files) => {
-        if (!files || files.length === 0) return;
-        setUploadProgress(10);
-        setUploadError(null);
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            try {
-                const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-                setPreviewImages(prev => [...prev, { url, name: file.name }]);
-                setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-            } catch (error) {
-                console.error(`Upload error:`, error);
-                setUploadError(`Erreur: ${error.message}`);
-            }
-        }
-        setUploadProgress(0);
-    };
-
-    const removeImage = (index) => {
-        setPreviewImages(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        // Optional image check
-        if (previewImages.length === 0) {
-            if (!window.confirm("Continuer sans image ?")) return;
-        }
-
-        setIsSubmitting(true);
+    const handleConfirmReservation = async (reservation) => {
+        if (!window.confirm("Confirmer la vente de cet article ?")) return;
         try {
-            const imageUrls = previewImages.map(img => img.url);
-            const productData = {
-                ...formData,
-                images: imageUrls,
-                price: Number(formData.price),
-                currency: "€",
-                updatedAt: new Date()
-            };
-
-            if (editingId) {
-                // Update
-                await updateDoc(doc(db, "products", editingId), productData);
-                alert("Produit modifié avec succès !");
-            } else {
-                // Create
-                productData.createdAt = new Date();
-                await addDoc(collection(db, "products"), productData);
-                alert("Produit ajouté avec succès !");
-            }
-
-            fetchProducts(); // Refresh list
-            setView('list');
+            await updateDoc(doc(db, "reservations", reservation.id), {
+                status: 'confirmed'
+            });
+            // Product remains 'reserved' or change to 'sold' if you prefer
+            await updateDoc(doc(db, "products", reservation.productId), {
+                status: 'sold'
+            });
+            alert("Vente confirmée !");
+            fetchReservations();
         } catch (error) {
-            console.error("Error saving product:", error);
-            alert("Erreur lors de l'enregistrement.");
-        } finally {
-            setIsSubmitting(false);
+            console.error("Error confirming reservation:", error);
+            alert("Erreur lors de la confirmation.");
         }
-    };
-
-    // Drag & Drop Handlers
-    const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
-    const onDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
-    const onDrop = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        handleFileUpload(e.dataTransfer.files);
     };
 
     // Render List View
@@ -200,93 +81,178 @@ const Admin = () => {
             <div className="admin-page container">
                 <div className="admin-header">
                     <h1>Tableau de Bord</h1>
-                    <button className="btn" onClick={startCreate}>
-                        <Plus size={20} /> Nouveau Produit
-                    </button>
-                </div>
-
-                <div className="admin-toolbar">
-                    <div className="search-bar">
-                        <Search size={20} />
-                        <input
-                            type="text"
-                            placeholder="Rechercher un produit..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    <div className="admin-tabs">
+                        <button
+                            className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('products')}
+                        >
+                            Produits
+                        </button>
+                        <button
+                            className={`tab-btn ${activeTab === 'reservations' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('reservations')}
+                        >
+                            Réservations
+                        </button>
                     </div>
-                    <select
-                        value={filterCategory}
-                        onChange={(e) => setFilterCategory(e.target.value)}
-                        className="category-filter"
-                    >
-                        <option value="all">Toutes les catégories</option>
-                        <option value="hauts">Hauts</option>
-                        <option value="bas">Bas</option>
-                        <option value="robes">Robes</option>
-                        <option value="vestes">Vestes</option>
-                        <option value="chaussures">Chaussures</option>
-                        <option value="accessoires">Accessoires</option>
-                    </select>
+                    {activeTab === 'products' && (
+                        <button className="btn" onClick={startCreate}>
+                            <Plus size={20} /> Nouveau Produit
+                        </button>
+                    )}
                 </div>
 
-                {isLoading ? (
-                    <div className="loading">Chargement...</div>
+                {activeTab === 'products' ? (
+                    <>
+                        <div className="admin-toolbar">
+                            <div className="search-bar">
+                                <Search size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher un produit..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                                className="category-filter"
+                            >
+                                <option value="all">Toutes les catégories</option>
+                                <option value="hauts">Hauts</option>
+                                <option value="bas">Bas</option>
+                                <option value="robes">Robes</option>
+                                <option value="vestes">Vestes</option>
+                                <option value="chaussures">Chaussures</option>
+                                <option value="accessoires">Accessoires</option>
+                            </select>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="loading">Chargement...</div>
+                        ) : (
+                            <div className="table-container">
+                                <table className="products-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Nom</th>
+                                            <th>Catégorie</th>
+                                            <th>Prix</th>
+                                            <th>État</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredProducts.length > 0 ? (
+                                            filteredProducts.map(product => {
+                                                const img = product.images?.[0] || product.image;
+                                                return (
+                                                    <tr key={product.id}>
+                                                        <td>
+                                                            <div className="table-img">
+                                                                {img ? <img src={img} alt={product.name} /> : <div className="no-img">No Img</div>}
+                                                            </div>
+                                                        </td>
+                                                        <td>{product.name}</td>
+                                                        <td><span className="badge">{product.category}</span></td>
+                                                        <td>{product.price}€</td>
+                                                        <td>{product.condition}</td>
+                                                        <td>
+                                                            <span className={`status-badge ${product.status || 'available'}`}>
+                                                                {product.status === 'reserved' ? 'Réservé' : (product.status === 'sold' ? 'Vendu' : 'Dispo')}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div className="actions">
+                                                                <button className="btn-icon edit" onClick={() => startEdit(product)} title="Modifier">
+                                                                    <Edit size={18} />
+                                                                </button>
+                                                                <button className="btn-icon delete" onClick={() => handleDelete(product.id)} title="Supprimer">
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>Aucun produit trouvé.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </>
                 ) : (
+                    // RESERVATIONS TAB
                     <div className="table-container">
-                        <table className="products-table">
-                            <thead>
-                                <tr>
-                                    <th>Image</th>
-                                    <th>Nom</th>
-                                    <th>Catégorie</th>
-                                    <th>Prix</th>
-                                    <th>État</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredProducts.length > 0 ? (
-                                    filteredProducts.map(product => {
-                                        const img = product.images?.[0] || product.image;
-                                        return (
-                                            <tr key={product.id}>
+                        {isLoading ? <div className="loading">Chargement...</div> : (
+                            <table className="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>Produit</th>
+                                        <th>Client</th>
+                                        <th>Contact</th>
+                                        <th>Date</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {reservations.length > 0 ? (
+                                        reservations.map(res => (
+                                            <tr key={res.id}>
                                                 <td>
-                                                    <div className="table-img">
-                                                        {img ? <img src={img} alt={product.name} /> : <div className="no-img">No Img</div>}
+                                                    <div className="res-product">
+                                                        <img src={res.productImage} alt="" width="40" />
+                                                        <span>{res.productName}</span>
                                                     </div>
                                                 </td>
-                                                <td>{product.name}</td>
-                                                <td><span className="badge">{product.category}</span></td>
-                                                <td>{product.price}€</td>
-                                                <td>{product.condition}</td>
+                                                <td>{res.userName}</td>
                                                 <td>
-                                                    <div className="actions">
-                                                        <button className="btn-icon edit" onClick={() => startEdit(product)} title="Modifier">
-                                                            <Edit size={18} />
-                                                        </button>
-                                                        <button className="btn-icon delete" onClick={() => handleDelete(product.id)} title="Supprimer">
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </div>
+                                                    <div>{res.userPhone}</div>
+                                                    <div style={{ fontSize: '0.8em', color: '#666' }}>{res.userEmail}</div>
+                                                </td>
+                                                <td>{res.createdAt?.toDate().toLocaleDateString()}</td>
+                                                <td>
+                                                    <span className={`status-badge ${res.status}`}>
+                                                        {res.status === 'pending' ? 'En attente' : (res.status === 'confirmed' ? 'Confirmé' : 'Annulé')}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {res.status === 'pending' && (
+                                                        <div className="actions">
+                                                            <button className="btn-icon confirm" onClick={() => handleConfirmReservation(res)} title="Confirmer Vente">
+                                                                <Check size={18} color="green" />
+                                                            </button>
+                                                            <button className="btn-icon delete" onClick={() => handleCancelReservation(res)} title="Annuler Réservation">
+                                                                <X size={18} color="red" />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>Aucun produit trouvé.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="6" style={{ textAlign: 'center', padding: '2rem' }}>Aucune réservation.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 )}
             </div>
         );
     }
 
-    // Render Form View
+    // Render Form View (unchanged mostly, just wrapped)
     return (
         <div className="admin-page container">
             <div className="form-header">
