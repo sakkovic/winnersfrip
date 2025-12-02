@@ -1,6 +1,7 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Instagram, Facebook, Video } from 'lucide-react';
 import './StaticPages.css';
+import Map from '../components/Map';
 
 const Contact = () => {
     return (
@@ -9,12 +10,17 @@ const Contact = () => {
                 <div className="contact-frida-content">
                     {/* Left Column: Info & Hours */}
                     <div className="frida-info-left">
-                        <h1 className="frida-title">WINNERS</h1>
+                        <h1 className="frida-title">CONTACT</h1>
 
-                        <div className="frida-address-section">
-                            <p>MONASTIR, TUNISIE</p>
-                            <p>AVENUE DE LA RÉPUBLIQUE</p>
-                            <p>5000</p>
+                        <div className="frida-locations-section">
+                            <div className="location-item">
+                                <div className="location-dot"></div>
+                                <div className="location-details">
+                                    <h3 className="location-name">Winners Monastir</h3>
+                                    <p className="location-address">QRFJ+J5R, Monastir, Tunisie</p>
+                                    <p className="location-address">Avenue de la République</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="frida-contact-section">
@@ -28,15 +34,15 @@ const Contact = () => {
                         </div>
 
                         <div className="frida-hours-section">
-                            <h3>BUSINESS HOURS</h3>
+                            <h3>HEURES D'OUVERTURE</h3>
                             <div className="hours-grid">
                                 <div className="hours-col">
-                                    <p className="day-range">SUNDAY TO WEDNESDAY</p>
-                                    <p className="time-range">9:00 A.M. TO 9:00 P.M.</p>
+                                    <p className="day-range">DIMANCHE AU MERCREDI</p>
+                                    <p className="time-range">09H00 À 21H00</p>
                                 </div>
                                 <div className="hours-col">
-                                    <p className="day-range">THURSDAY TO SATURDAY</p>
-                                    <p className="time-range">9:00 A.M. TO 10:00 P.M.</p>
+                                    <p className="day-range">JEUDI AU SAMEDI</p>
+                                    <p className="time-range">09H00 À 22H00</p>
                                 </div>
                             </div>
                         </div>
@@ -49,17 +55,7 @@ const Contact = () => {
                     {/* Right Column: Map */}
                     <div className="frida-map-right">
                         <div className="map-frame">
-                            <iframe 
-                                title="Location Map"
-                                width="100%" 
-                                height="100%" 
-                                frameBorder="0" 
-                                scrolling="no" 
-                                marginHeight="0" 
-                                marginWidth="0" 
-                                src="https://maps.google.com/maps?q=QRCM+5H5,+Monastir,+Tunisie&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                                style={{ border: 0, display: 'block' }}
-                            ></iframe>
+                            <Map />
                         </div>
                     </div>
                 </div>

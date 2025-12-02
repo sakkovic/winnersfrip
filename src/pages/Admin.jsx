@@ -12,6 +12,201 @@ const Admin = () => {
     const [activeTab, setActiveTab] = useState('products'); // 'products' or 'reservations'
     const [reservations, setReservations] = useState([]);
 
+    const [view, setView] = useState('list'); // 'list' or 'form'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [editingId, setEditingId] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Form State
+    const [formData, setFormData] = useState({
+        name: '',
+        price: '',
+        category: 'hauts',
+        origin: 'europe',
+        gender: 'femme',
+        color: 'noir',
+        style: '',
+        description: '',
+        isNewArrival: false,
+        images: [], // Array of URLs
+        condition: 'seconde_main'
+    });
+
+    // Image Upload State
+    const [isDragging, setIsDragging] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState(null);
+    const [previewImages, setPreviewImages] = useState([]);
+    const fileInputRef = useRef(null);
+
+    // Fetch Products
+    const fetchProducts = async () => {
+        setIsLoading(true);
+        try {
+            const querySnapshot = await getDocs(collection(db, "products"));
+            const productsData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setProducts(productsData);
+        } catch (error) {
+            console.error("Error fetching products:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Filter Logic
+    const filteredProducts = products.filter(product => {
+        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
+        return matchesSearch && matchesCategory;
+    });
+
+    // Form Handlers
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    const startCreate = () => {
+        setEditingId(null);
+        setFormData({
+            name: '',
+            price: '',
+            category: 'hauts',
+            origin: 'europe',
+            gender: 'femme',
+            color: 'noir',
+            style: '',
+            description: '',
+            isNewArrival: false,
+            images: [],
+            condition: 'seconde_main'
+        });
+        setPreviewImages([]);
+        setView('form');
+    };
+
+    const startEdit = (product) => {
+        setEditingId(product.id);
+        setFormData({
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            origin: product.origin || 'europe',
+            gender: product.gender || 'femme',
+            color: product.color || 'noir',
+            style: product.style || '',
+            description: product.description || '',
+            isNewArrival: product.isNewArrival || false,
+            images: product.images || (product.image ? [product.image] : []),
+            condition: product.condition || 'seconde_main'
+        });
+
+        // Set previews
+        const images = product.images || (product.image ? [product.image] : []);
+        setPreviewImages(images.map(url => ({ url })));
+
+        setView('form');
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
+        try {
+            await deleteDoc(doc(db, "products", id));
+            setProducts(prev => prev.filter(p => p.id !== id));
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            alert("Erreur lors de la suppression.");
+        }
+    };
+
+    // Image Upload Handlers
+    const handleFileUpload = async (files) => {
+        if (!files || files.length === 0) return;
+
+        const newPreviews = Array.from(files).map(file => ({
+            url: URL.createObjectURL(file),
+            file
+        }));
+        setPreviewImages(prev => [...prev, ...newPreviews]);
+    };
+
+    const onDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const onDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const onDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        handleFileUpload(e.dataTransfer.files);
+    };
+
+    const removeImage = (index) => {
+        setPreviewImages(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setUploadError(null);
+
+        try {
+            // Upload images first
+            const imageUrls = [];
+
+            // Keep existing URLs
+            const existingUrls = previewImages.filter(img => !img.file).map(img => img.url);
+            imageUrls.push(...existingUrls);
+
+            // Upload new files
+            const newFiles = previewImages.filter(img => img.file).map(img => img.file);
+
+            for (const file of newFiles) {
+                const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+                const snapshot = await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+                imageUrls.push(url);
+            }
+
+            const productData = {
+                ...formData,
+                price: Number(formData.price),
+                images: imageUrls,
+                image: imageUrls[0] || '', // Backwards compatibility
+                updatedAt: new Date(),
+                status: 'available' // Default status
+            };
+
+            if (editingId) {
+                await updateDoc(doc(db, "products", editingId), productData);
+                setProducts(prev => prev.map(p => p.id === editingId ? { ...p, ...productData, id: editingId } : p));
+            } else {
+                productData.createdAt = new Date();
+                const docRef = await addDoc(collection(db, "products"), productData);
+                setProducts(prev => [...prev, { ...productData, id: docRef.id }]);
+            }
+
+            setView('list');
+        } catch (error) {
+            console.error("Error saving product:", error);
+            setUploadError("Erreur lors de l'enregistrement.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     // Fetch Reservations
     const fetchReservations = async () => {
         setIsLoading(true);

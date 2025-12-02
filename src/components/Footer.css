@@ -1,49 +1,51 @@
 .footer {
-    background-color: #2E5D4B;
-    /* Match Frida Dark Green */
-    color: #F5F5DC;
-    /* Cream text */
-    padding: 2rem 0;
-    /* Compact padding */
+    background-color: #111111;
+    /* Very dark gray/black */
+    color: #f0f0f0;
+    padding: 1.5rem 0;
     margin-top: auto;
-    border-top: 1px solid rgba(245, 245, 220, 0.1);
+    font-size: 0.9rem;
 }
 
 .footer-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 2rem;
 }
 
+.footer-col {
+    flex: 1;
+    min-width: 200px;
+}
+
 .footer-col h3 {
-    color: #F5F5DC;
-    font-family: 'Playfair Display', serif;
-    /* Match title font */
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
-    letter-spacing: 1px;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
 }
 
 .footer-col ul li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .footer-col a {
-    color: #F5F5DC;
-    opacity: 0.8;
-    transition: opacity 0.3s;
+    color: #bbbbbb;
+    transition: color 0.3s ease;
 }
 
 .footer-col a:hover {
-    opacity: 1;
+    color: #ffffff;
     text-decoration: none;
 }
 
 .copyright {
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(245, 245, 220, 0.1);
-    font-size: 0.8rem;
-    opacity: 0.6;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.75rem;
+    color: #888888;
 }

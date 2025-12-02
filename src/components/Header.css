@@ -31,7 +31,7 @@
 
 .nav-links {
     display: flex;
-    gap: 2.5rem;
+    gap: 2rem;
 }
 
 .nav-links a {
@@ -63,31 +63,6 @@
     transition: width 0.3s ease;
 }
 
-.nav-links a:hover::after,
-.nav-links a.active::after {
-    width: 100%;
-}
-
-.admin-link {
-    color: var(--secondary-accent) !important;
-    font-weight: bold;
-}
-
-.logout-btn {
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: color 0.3s ease;
-}
-
-.logout-btn:hover {
-    color: var(--secondary-accent) !important;
-}
-
-.mobile-toggle {
-    display: none;
-    cursor: pointer;
-    color: var(--text-main);
-}
 
 /* Mobile Styles */
 @media (max-width: 768px) {
