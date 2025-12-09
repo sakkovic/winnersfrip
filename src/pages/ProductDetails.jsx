@@ -80,73 +80,114 @@ const ProductDetails = () => {
 
     return (
         <div className="product-details-page container">
-            <Link to="/shop" className="back-link"><ArrowLeft size={20} /> Retour à la boutique</Link>
+            {/* Breadcrumbs */}
+            <div className="breadcrumbs">
+                <Link to="/">Home</Link>
+                <span>&gt;</span>
+                <Link to="/shop">Shop</Link>
+                <span>&gt;</span>
+                <span className="current">{product.name}</span>
+            </div>
 
             <div className="product-layout">
-                <div className="product-gallery">
-                    <div className="main-image">
+                {/* Gallery Section */}
+                <div className="product-gallery-wrapper">
+                    <div className="thumbnails-vertical">
+                        {productImages.map((img, index) => (
+                            <div
+                                key={index}
+                                className={`thumbnail-item ${mainImage === img ? 'active' : ''}`}
+                                onMouseEnter={() => setMainImage(img)}
+                                onClick={() => setMainImage(img)}
+                            >
+                                <img src={img} alt={`${product.name} view ${index + 1}`} />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="main-image-container">
                         {mainImage ? (
-                            <img src={mainImage} alt={product.name} />
+                            <img src={mainImage} alt={product.name} className="main-img" />
                         ) : (
                             <div className="no-image-placeholder">Pas d'image</div>
                         )}
                     </div>
-                    {productImages.length > 1 && (
-                        <div className="thumbnails">
-                            {productImages.map((img, index) => (
-                                <div
-                                    key={index}
-                                    className={`thumbnail ${mainImage === img ? 'active' : ''}`}
-                                    onClick={() => setMainImage(img)}
-                                >
-                                    <img src={img} alt={`${product.name} ${index + 1}`} />
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
 
-                <div className="product-info-main">
-                    <div className="product-header">
-                        <h1>{product.name}</h1>
-                        <p className="price-lg">{product.price} {product.currency}</p>
-                    </div>
+                {/* Info Section */}
+                <div className="product-info-column">
+                    <div className="product-header-info">
+                        <h1 className="product-title">{product.name}</h1>
 
-                    <div className="product-meta">
-                        <div className="meta-item">
-                            <span className="label">Taille:</span>
-                            <span className="value">{product.size}</span>
+                        <div className="product-meta-row">
+                            {product.discount && <span className="badge-save">Save {product.discount}%</span>}
+                            <span className="brand-name">WINNERS MONASTIR</span>
+                            <span className="sku">SKU: {product.id.substring(0, 8).toUpperCase()}</span>
                         </div>
-                        <div className="meta-item">
-                            <span className="label">État:</span>
-                            <span className="value badge-text">{product.condition ? product.condition.replace('_', ' ') : 'N/A'}</span>
-                        </div>
-                        <div className="meta-item">
-                            <span className="label">Origine:</span>
-                            <span className="value">{product.origin}</span>
-                        </div>
-                        <div className="meta-item">
-                            <span className="label">Style:</span>
-                            <span className="value">{product.style}</span>
+
+                        <div className="reviews-placeholder">
+                            <div className="stars">★★★★★</div>
+                            <span className="review-count">1 review</span>
                         </div>
                     </div>
 
-                    <div className="product-description">
-                        <h3>Description</h3>
-                        <p>{product.description}</p>
+                    <div className="selectors-section">
+                        {/* Size Selector */}
+                        <div className="selector-group">
+                            <label>Size: <span className="selected-value">{product.size}</span></label>
+                            <div className="size-options">
+                                {['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => (
+                                    <button
+                                        key={size}
+                                        className={`size-btn ${product.size === size ? 'active' : ''} ${product.size !== size ? 'disabled' : ''}`}
+                                        disabled={product.size !== size}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Gender/Category Info */}
+                        <div className="selector-group">
+                            <label>Gender: <span className="selected-value">{product.gender}</span></label>
+                            <div className="gender-tag">{product.gender}</div>
+                        </div>
                     </div>
 
-                    <div className="product-actions">
+                    <div className="price-section">
+                        <span className="label">Price:</span>
+                        <span className="current-price">{product.price} {product.currency || 'CAD'}</span>
+                        {product.originalPrice && <span className="original-price">{product.originalPrice} {product.currency || 'CAD'}</span>}
+                        <span className="payment-info">or 4 payments of {(product.price / 4).toFixed(2)} {product.currency || 'CAD'} with <span className="sezzle">sezzle</span></span>
+                    </div>
+
+                    <div className="quantity-section">
+                        <label>Quantity:</label>
+                        <div className="quantity-selector">
+                            <button>-</button>
+                            <input type="text" value="1" readOnly />
+                            <button>+</button>
+                        </div>
+                        <span className="stock-status">● In stock</span>
+                    </div>
+
+                    <div className="action-buttons">
                         {product.status === 'reserved' ? (
-                            <button className="btn btn-lg btn-disabled" disabled>
-                                Réservé
+                            <button className="btn-black btn-full disabled" disabled>
+                                PRODUIT RÉSERVÉ
                             </button>
                         ) : (
-                            <button className="btn btn-lg" onClick={() => setIsModalOpen(true)}>
-                                Réserver cet article
+                            <button className="btn-black btn-full" onClick={() => setIsModalOpen(true)}>
+                                ADD TO CART
                             </button>
                         )}
-                        <p className="secure-text"><Check size={16} /> Réservation gratuite & sans engagement</p>
+                    </div>
+
+                    <p className="return-policy">Non-Returnable Item</p>
+
+                    <div className="product-description-accordion">
+                        <h3>Description</h3>
+                        <p>{product.description}</p>
                     </div>
                 </div>
             </div>

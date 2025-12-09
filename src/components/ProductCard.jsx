@@ -17,11 +17,9 @@ const ProductCard = ({ product }) => {
                 {condition === 'seconde_main' && <span className="badge second-hand">Seconde Main</span>}
             </div>
             <div className="product-info">
-                <h4><Link to={`/product/${id}`}>{name}</Link></h4>
+                {product.brand && <h5 className="product-brand">{product.brand}</h5>}
+                <h4 className="product-title"><Link to={`/product/${id}`}>{name}</Link></h4>
                 <p className="price">{price} {currency}</p>
-                <div className="card-actions">
-                    <Link to={`/product/${id}`} className="btn-sm">Voir</Link>
-                </div>
             </div>
         </div>
     );

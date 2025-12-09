@@ -8,6 +8,32 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-lg);
+    gap: 20px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.header-search {
+    width: 300px;
+    max-width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.header-sort {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: white;
+    min-width: 150px;
 }
 
 .btn-filter-mobile {
@@ -152,10 +178,13 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    border: 1px solid #000;
+    padding-bottom: 10px;
 }
 
 .btn-reserve-quick {
-    width: 100%;
+    width: 90%;
+    margin: 0 auto;
     padding: 8px;
     background: transparent;
     border: 1px solid var(--accent-color);

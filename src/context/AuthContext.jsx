@@ -6,7 +6,8 @@ import {
     signOut,
     onAuthStateChanged,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -38,6 +39,10 @@ export function AuthProvider({ children }) {
         return signOut(auth);
     }
 
+    function resetPassword(email) {
+        return sendPasswordResetEmail(auth, email);
+    }
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setCurrentUser(user);
@@ -46,20 +51,31 @@ export function AuthProvider({ children }) {
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
-                        setUserRole(userDoc.data().role);
+                        // Force Admin Role for specific email
+                        if (user.email === 'anis.federe@gmail.com') {
+                            setUserRole('admin');
+                        } else {
+                            setUserRole(userDoc.data().role);
+                        }
                     } else {
                         // If new user via social auth, create doc
+                        const role = user.email === 'anis.federe@gmail.com' ? 'admin' : 'client';
                         await setDoc(doc(db, "users", user.uid), {
                             name: user.displayName || 'Utilisateur',
                             email: user.email,
-                            role: 'client',
+                            role: role,
                             createdAt: new Date()
                         });
-                        setUserRole('client');
+                        setUserRole(role);
                     }
                 } catch (error) {
                     console.error("Error fetching user role:", error);
-                    setUserRole('client');
+                    // Fallback
+                    if (user.email === 'anis.federe@gmail.com') {
+                        setUserRole('admin');
+                    } else {
+                        setUserRole('client');
+                    }
                 }
             } else {
                 setUserRole(null);
@@ -76,7 +92,8 @@ export function AuthProvider({ children }) {
         signup,
         login,
         loginWithGoogle,
-        logout
+        logout,
+        resetPassword
     };
 
     return (

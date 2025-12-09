@@ -228,7 +228,7 @@
     font-size: 0.95rem;
 }
 
-.form-group input,
+.form-group input:not([type="checkbox"]),
 .form-group select,
 .form-group textarea {
     width: 100%;
@@ -246,6 +246,24 @@
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(46, 93, 75, 0.1);
+}
+
+.form-group.checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    margin-bottom: 0;
+    font-weight: 500;
+    padding: 0.5rem 0;
+}
+
+.form-group.checkbox input[type="checkbox"] {
+    width: 1.2rem;
+    height: 1.2rem;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+    margin: 0;
 }
 
 .form-actions {
@@ -414,4 +432,9 @@
     object-fit: cover;
     border-radius: 6px;
     border: 1px solid #eee;
+}
+
+.modal-overlay {
+    z-index: 9999;
+    /* Ensure it's above everything in admin */
 }

@@ -28,14 +28,14 @@ const Shop = () => {
 
     // Collapsible State (all open by default or specific ones)
     const [expandedSections, setExpandedSections] = useState({
-        price: true,
-        gender: true,
-        size: true,
+        price: false,
+        gender: false,
+        size: false,
         style: false,
         color: false,
         condition: false,
         origin: false,
-        category: true
+        category: false
     });
 
     const toggleSection = (section) => {
@@ -136,9 +136,26 @@ const Shop = () => {
         <div className="shop-page container">
             <div className="shop-header">
                 <h1 className="page-title">Boutique</h1>
-                <button className="btn-filter-mobile" onClick={() => setIsFilterOpen(true)}>
-                    <Filter size={20} /> Filtres
-                </button>
+
+                <div className="header-controls">
+                    <input
+                        type="text"
+                        placeholder="Rechercher..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input header-search"
+                    />
+
+                    <select value={sort} onChange={(e) => setSort(e.target.value)} className="sort-select header-sort">
+                        <option value="newest">Plus récent</option>
+                        <option value="price-asc">Prix croissant</option>
+                        <option value="price-desc">Prix décroissant</option>
+                    </select>
+
+                    <button className="btn-filter-mobile" onClick={() => setIsFilterOpen(true)}>
+                        <Filter size={20} /> Filtres
+                    </button>
+                </div>
             </div>
 
             <div className="shop-layout">
@@ -149,24 +166,7 @@ const Shop = () => {
                         <button className="close-sidebar" onClick={() => setIsFilterOpen(false)}><X size={24} /></button>
                     </div>
 
-                    <div className="filter-group search-group">
-                        <input
-                            type="text"
-                            placeholder="Rechercher..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                    </div>
 
-                    <div className="filter-group">
-                        <h4>Trier par</h4>
-                        <select value={sort} onChange={(e) => setSort(e.target.value)} className="sort-select">
-                            <option value="newest">Plus récent</option>
-                            <option value="price-asc">Prix croissant</option>
-                            <option value="price-desc">Prix décroissant</option>
-                        </select>
-                    </div>
 
                     <FilterSection
                         title="Prix"

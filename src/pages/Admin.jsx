@@ -17,6 +17,7 @@ const Admin = () => {
     const [filterCategory, setFilterCategory] = useState('all');
     const [editingId, setEditingId] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState(null); // { id, name }
 
     // Form State
     const [formData, setFormData] = useState({
@@ -29,8 +30,11 @@ const Admin = () => {
         style: '',
         description: '',
         isNewArrival: false,
-        images: [], // Array of URLs
-        condition: 'seconde_main'
+        images: [],
+        condition: 'seconde_main',
+        size: '',
+        brand: '',
+        material: ''
     });
 
     // Image Upload State
@@ -86,13 +90,17 @@ const Admin = () => {
             description: '',
             isNewArrival: false,
             images: [],
-            condition: 'seconde_main'
+            condition: 'seconde_main',
+            size: '',
+            brand: '',
+            material: ''
         });
         setPreviewImages([]);
         setView('form');
     };
 
-    const startEdit = (product) => {
+    const startEdit = (product, e) => {
+        if (e) e.stopPropagation();
         setEditingId(product.id);
         setFormData({
             name: product.name,
@@ -105,25 +113,39 @@ const Admin = () => {
             description: product.description || '',
             isNewArrival: product.isNewArrival || false,
             images: product.images || (product.image ? [product.image] : []),
-            condition: product.condition || 'seconde_main'
+            condition: product.condition || 'seconde_main',
+            size: product.size || '',
+            brand: product.brand || '',
+            material: product.material || ''
         });
 
-        // Set previews
         const images = product.images || (product.image ? [product.image] : []);
         setPreviewImages(images.map(url => ({ url })));
 
         setView('form');
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
+    const handleDelete = (product, e) => {
+        if (e) e.stopPropagation();
+        setDeleteConfirmation({ id: product.id, name: product.name });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmation) return;
+
+        const { id } = deleteConfirmation;
         try {
             await deleteDoc(doc(db, "products", id));
             setProducts(prev => prev.filter(p => p.id !== id));
+            setDeleteConfirmation(null);
         } catch (error) {
             console.error("Error deleting product:", error);
-            alert("Erreur lors de la suppression.");
+            alert("Erreur lors de la suppression: " + error.message);
         }
+    };
+
+    const cancelDelete = () => {
+        setDeleteConfirmation(null);
     };
 
     // Image Upload Handlers
@@ -157,10 +179,41 @@ const Admin = () => {
         setPreviewImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    // Image Compression Helper
+    const compressImage = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // Resize to max 800px width
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    canvas.toBlob((blob) => {
+                        const compressedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        resolve(compressedFile);
+                    }, 'image/jpeg', 0.7); // 70% quality
+                };
+            };
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setUploadError(null);
+        setUploadProgress(0);
 
         try {
             // Upload images first
@@ -172,12 +225,21 @@ const Admin = () => {
 
             // Upload new files
             const newFiles = previewImages.filter(img => img.file).map(img => img.file);
+            const totalFiles = newFiles.length;
 
-            for (const file of newFiles) {
+            for (let i = 0; i < totalFiles; i++) {
+                const file = newFiles[i];
+
+                // Compress image
+                const compressedFile = await compressImage(file);
+
                 const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-                const snapshot = await uploadBytes(storageRef, file);
+                const snapshot = await uploadBytes(storageRef, compressedFile);
                 const url = await getDownloadURL(snapshot.ref);
                 imageUrls.push(url);
+
+                // Update progress
+                setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
             }
 
             const productData = {
@@ -201,9 +263,10 @@ const Admin = () => {
             setView('list');
         } catch (error) {
             console.error("Error saving product:", error);
-            setUploadError("Erreur lors de l'enregistrement.");
+            setUploadError("Erreur lors de l'enregistrement: " + error.message);
         } finally {
             setIsSubmitting(false);
+            setUploadProgress(0);
         }
     };
 
@@ -232,42 +295,65 @@ const Admin = () => {
     }, [activeTab]);
 
     // Reservation Actions
-    const handleCancelReservation = async (reservation) => {
+    const handleCancelReservation = async (reservation, e) => {
+        if (e) e.stopPropagation();
         if (!window.confirm("Annuler cette réservation et remettre le produit en vente ?")) return;
+
         try {
             // 1. Update Reservation status
             await updateDoc(doc(db, "reservations", reservation.id), {
                 status: 'cancelled'
             });
-            // 2. Update Product status
-            await updateDoc(doc(db, "products", reservation.productId), {
-                status: 'available',
-                reservedBy: null
-            });
+
+            // 2. Update Product status (if productId exists)
+            if (reservation.productId) {
+                await updateDoc(doc(db, "products", reservation.productId), {
+                    status: 'available',
+                    reservedBy: null
+                });
+            }
+
             alert("Réservation annulée.");
             fetchReservations();
         } catch (error) {
             console.error("Error cancelling reservation:", error);
-            alert("Erreur lors de l'annulation.");
+            alert("Erreur lors de l'annulation: " + error.message);
         }
     };
 
-    const handleConfirmReservation = async (reservation) => {
+    const handleConfirmReservation = async (reservation, e) => {
+        if (e) e.stopPropagation();
         if (!window.confirm("Confirmer la vente de cet article ?")) return;
+
         try {
             await updateDoc(doc(db, "reservations", reservation.id), {
                 status: 'confirmed'
             });
+
             // Product remains 'reserved' or change to 'sold' if you prefer
-            await updateDoc(doc(db, "products", reservation.productId), {
-                status: 'sold'
-            });
+            if (reservation.productId) {
+                await updateDoc(doc(db, "products", reservation.productId), {
+                    status: 'sold'
+                });
+            }
+
             alert("Vente confirmée !");
             fetchReservations();
         } catch (error) {
             console.error("Error confirming reservation:", error);
-            alert("Erreur lors de la confirmation.");
+            alert("Erreur lors de la confirmation: " + error.message);
         }
+    };
+
+    // Helper for Size Options
+    const getSizeOptions = (category) => {
+        const numericSizes = Array.from({ length: 36 }, (_, i) => (i + 15).toString());
+
+        if (category === 'chaussures') {
+            return numericSizes;
+        }
+        // Clothing Sizes
+        return ['XS', 'S', 'M', 'L', 'XL', 'XXL', ...numericSizes];
     };
 
     // Render List View
@@ -362,10 +448,10 @@ const Admin = () => {
                                                         </td>
                                                         <td>
                                                             <div className="actions">
-                                                                <button className="btn-icon edit" onClick={() => startEdit(product)} title="Modifier">
+                                                                <button className="btn-icon edit" onClick={(e) => startEdit(product, e)} title="Modifier">
                                                                     <Edit size={18} />
                                                                 </button>
-                                                                <button className="btn-icon delete" onClick={() => handleDelete(product.id)} title="Supprimer">
+                                                                <button className="btn-icon delete" onClick={(e) => handleDelete(product, e)} title="Supprimer">
                                                                     <Trash2 size={18} />
                                                                 </button>
                                                             </div>
@@ -422,10 +508,10 @@ const Admin = () => {
                                                 <td>
                                                     {res.status === 'pending' && (
                                                         <div className="actions">
-                                                            <button className="btn-icon confirm" onClick={() => handleConfirmReservation(res)} title="Confirmer Vente">
+                                                            <button className="btn-icon confirm" onClick={(e) => handleConfirmReservation(res, e)} title="Confirmer Vente">
                                                                 <Check size={18} color="green" />
                                                             </button>
-                                                            <button className="btn-icon delete" onClick={() => handleCancelReservation(res)} title="Annuler Réservation">
+                                                            <button className="btn-icon delete" onClick={(e) => handleCancelReservation(res, e)} title="Annuler Réservation">
                                                                 <X size={18} color="red" />
                                                             </button>
                                                         </div>
@@ -447,7 +533,6 @@ const Admin = () => {
         );
     }
 
-    // Render Form View (unchanged mostly, just wrapped)
     return (
         <div className="admin-page container">
             <div className="form-header">
@@ -459,30 +544,69 @@ const Admin = () => {
 
             <div className="admin-layout">
                 <form onSubmit={handleSubmit} className="admin-form">
-                    {/* Reuse existing form fields */}
+                    {/* Basic Info */}
                     <div className="form-row">
                         <div className="form-group">
                             <label>Nom du produit</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+                            <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="Ex: Robe fleurie Zara" />
                         </div>
                         <div className="form-group">
-                            <label>Prix (€)</label>
-                            <input type="number" name="price" value={formData.price} onChange={handleChange} required />
+                            <label>Marque</label>
+                            <input type="text" name="brand" value={formData.brand} onChange={handleChange} placeholder="Ex: Zara, H&M, Vintage..." />
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
+                            <label>Prix (€)</label>
+                            <input type="number" name="price" value={formData.price} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>État</label>
+                            <select name="condition" value={formData.condition} onChange={handleChange}>
+                                <option value="neuf">Neuf avec étiquette</option>
+                                <option value="comme_neuf">Comme neuf</option>
+                                <option value="tres_bon_etat">Très bon état</option>
+                                <option value="bon_etat">Bon état</option>
+                                <option value="satisfaisant">Satisfaisant</option>
+                                <option value="seconde_main">Seconde Main (Générique)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Categories & Details */}
+                    <div className="form-row">
+                        <div className="form-group">
                             <label>Catégorie</label>
                             <select name="category" value={formData.category} onChange={handleChange}>
-                                <option value="hauts">Hauts</option>
-                                <option value="bas">Bas</option>
-                                <option value="robes">Robes</option>
-                                <option value="vestes">Vestes</option>
+                                <option value="hauts">Hauts (T-shirts, Chemises...)</option>
+                                <option value="bas">Bas (Pantalons, Jupes...)</option>
+                                <option value="robes">Robes & Combinaisons</option>
+                                <option value="vestes">Vestes & Manteaux</option>
                                 <option value="chaussures">Chaussures</option>
-                                <option value="neuf">Neuf</option>
-                                <option value="seconde_main">Seconde Main</option>
-                                <option value="comme_neuf">Comme Neuf</option>
+                                <option value="accessoires">Accessoires</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Taille</label>
+                            <select name="size" value={formData.size} onChange={handleChange}>
+                                <option value="">Sélectionner la taille</option>
+                                {getSizeOptions(formData.category).map(size => (
+                                    <option key={size} value={size}>{size}</option>
+                                ))}
+                                <option value="unique">Taille Unique</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Genre</label>
+                            <select name="gender" value={formData.gender} onChange={handleChange}>
+                                <option value="femme">Femme</option>
+                                <option value="homme">Homme</option>
+                                <option value="enfant">Enfant</option>
+                                <option value="unisexe">Unisexe</option>
                             </select>
                         </div>
                         <div className="form-group">
@@ -495,36 +619,47 @@ const Admin = () => {
                         </div>
                     </div>
 
+                    {/* Style & Material */}
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Genre</label>
-                            <select name="gender" value={formData.gender} onChange={handleChange}>
-                                <option value="homme">Homme</option>
-                                <option value="femme">Femme</option>
-                                <option value="enfant">Enfant</option>
-                                <option value="unisexe">Unisexe</option>
+                            <label>Style</label>
+                            <select name="style" value={formData.style} onChange={handleChange}>
+                                <option value="">Sélectionner un style</option>
+                                <option value="streetwear">Streetwear</option>
+                                <option value="vintage">Vintage</option>
+                                <option value="sport">Sport / Casual</option>
+                                <option value="chic">Chic / Élégant</option>
+                                <option value="y2k">Y2K</option>
+                                <option value="minimaliste">Minimaliste</option>
+                                <option value="boheme">Bohème</option>
                             </select>
                         </div>
                         <div className="form-group">
-                            <label>Couleur</label>
-                            <select name="color" value={formData.color} onChange={handleChange}>
-                                <option value="noir">Noir</option>
-                                <option value="blanc">Blanc</option>
-                                <option value="bleu">Bleu</option>
-                                <option value="rouge">Rouge</option>
-                                <option value="vert">Vert</option>
-                                <option value="beige">Beige</option>
-                                <option value="marron">Marron</option>
-                                <option value="multicolore">Multicolore</option>
-                            </select>
+                            <label>Matière</label>
+                            <input type="text" name="material" value={formData.material} onChange={handleChange} placeholder="Ex: Coton, Soie, Cuir..." />
                         </div>
                     </div>
 
                     <div className="form-group">
-                        <label>Style</label>
-                        <input type="text" name="style" value={formData.style} onChange={handleChange} />
+                        <label>Couleur</label>
+                        <select name="color" value={formData.color} onChange={handleChange}>
+                            <option value="noir">Noir</option>
+                            <option value="blanc">Blanc</option>
+                            <option value="gris">Gris</option>
+                            <option value="beige">Beige</option>
+                            <option value="bleu">Bleu</option>
+                            <option value="rouge">Rouge</option>
+                            <option value="vert">Vert</option>
+                            <option value="jaune">Jaune</option>
+                            <option value="rose">Rose</option>
+                            <option value="marron">Marron</option>
+                            <option value="violet">Violet</option>
+                            <option value="orange">Orange</option>
+                            <option value="multicolore">Multicolore</option>
+                        </select>
                     </div>
 
+                    {/* Images */}
                     <div className="form-group">
                         <label>Images</label>
                         <div
@@ -562,7 +697,7 @@ const Admin = () => {
 
                     <div className="form-group">
                         <label>Description</label>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows="3"></textarea>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows="3" placeholder="Description détaillée de l'article..."></textarea>
                     </div>
 
                     <div className="form-group checkbox">
@@ -575,11 +710,24 @@ const Admin = () => {
                     <div className="form-actions">
                         <button type="button" className="btn-secondary" onClick={() => setView('list')}>Annuler</button>
                         <button type="submit" className="btn" disabled={isSubmitting}>
-                            {isSubmitting ? 'Enregistrement...' : (editingId ? 'Modifier' : 'Ajouter')}
+                            {isSubmitting ? (uploadProgress > 0 ? `Envoi ${uploadProgress}%...` : 'Traitement...') : (editingId ? 'Modifier' : 'Ajouter')}
                         </button>
                     </div>
                 </form>
             </div>
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmation && (
+                <div className="modal-overlay">
+                    <div className="logout-modal-content">
+                        <h3>Confirmer la suppression</h3>
+                        <p>Êtes-vous sûr de vouloir supprimer "{deleteConfirmation.name}" ?</p>
+                        <div className="logout-modal-actions">
+                            <button className="btn-secondary" onClick={cancelDelete}>Annuler</button>
+                            <button className="btn-primary-logout" onClick={confirmDelete}>Supprimer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

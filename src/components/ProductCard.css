@@ -1,28 +1,39 @@
 .product-card {
     background: white;
-    border-radius: 8px;
+    border: none;
+    /* Removed default border */
+    border-radius: 0;
+    /* Reference looks sharper, maybe slight radius or none */
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    transition: box-shadow 0.3s;
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .product-card:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    border-color: transparent;
 }
 
 .product-image {
     position: relative;
-    height: 300px;
+    height: 320px;
+    /* Slightly taller for better breathing room */
     overflow: hidden;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    /* Add padding inside image box */
 }
 
 .product-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s;
+    object-fit: contain;
+    transition: transform 0.5s ease;
 }
 
 .product-card:hover .product-image img {
@@ -33,59 +44,77 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 700;
     text-transform: uppercase;
     z-index: 1;
+    letter-spacing: 0.5px;
 }
 
-.badge.new {
+.badge-new {
+    position: absolute;
+    top: 10px;
+    left: 10px;
     background-color: var(--accent-color);
     color: white;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    z-index: 1;
 }
 
 .badge.second-hand {
     background-color: #e67e22;
     color: white;
     top: 40px;
-    /* Stack if both exist, though logic usually prevents overlap or we can adjust */
 }
 
 .product-info {
-    padding: var(--spacing-md);
+    padding: 1.5rem 1rem;
     text-align: center;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    gap: 0.5rem;
+    background: white;
 }
 
-.product-info h4 {
-    font-size: 1.1rem;
-    margin-bottom: var(--spacing-sm);
-    color: var(--text-main);
-    font-weight: 600;
+.product-brand {
+    color: #888;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.product-title {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.product-title a {
+    color: #000;
+    text-decoration: none;
+    font-weight: 800;
+    /* Bold like reference */
+    text-transform: uppercase;
+    transition: color 0.2s;
+}
+
+.product-title a:hover {
+    color: var(--accent-color);
 }
 
 .product-info .price {
-    font-weight: bold;
-    color: var(--secondary-accent);
-    font-size: 1.2rem;
-    margin-bottom: var(--spacing-md);
+    font-weight: 500;
+    color: #333;
+    font-size: 1rem;
+    margin-top: 0.5rem;
 }
 
-.btn-sm {
-    display: inline-block;
-    padding: 8px 16px;
-    background-color: var(--text-main);
-    color: white;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    transition: background 0.3s;
-}
-
-.btn-sm:hover {
-    background-color: var(--accent-color);
-}
+/* Remove button styles as we removed the button */
