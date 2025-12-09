@@ -146,11 +146,14 @@ const Shop = () => {
                         className="search-input header-search"
                     />
 
-                    <select value={sort} onChange={(e) => setSort(e.target.value)} className="sort-select header-sort">
-                        <option value="newest">Plus récent</option>
-                        <option value="price-asc">Prix croissant</option>
-                        <option value="price-desc">Prix décroissant</option>
-                    </select>
+                    <div className="sort-container">
+                        <span className="sort-label">Trier par :</span>
+                        <select value={sort} onChange={(e) => setSort(e.target.value)} className="sort-select header-sort">
+                            <option value="newest">Plus récent</option>
+                            <option value="price-asc">Prix croissant</option>
+                            <option value="price-desc">Prix décroissant</option>
+                        </select>
+                    </div>
 
                     <button className="btn-filter-mobile" onClick={() => setIsFilterOpen(true)}>
                         <Filter size={20} /> Filtres
