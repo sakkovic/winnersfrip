@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { Menu, X, ShoppingBag, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './Header.css';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { currentUser, logout } = useAuth();
+    const { cart, toggleCart } = useCart();
     const location = useLocation();
+
+    // Cart animation state
+    const [cartBump, setCartBump] = useState(false);
+
+    React.useEffect(() => {
+        if (cart.length > 0) {
+            setCartBump(true);
+            const timer = setTimeout(() => setCartBump(false), 300);
+            return () => clearTimeout(timer);
+        }
+    }, [cart.length]);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -32,7 +46,7 @@ const Header = () => {
     return (
         <>
             <header className="header">
-                <div className="container nav-container">
+                <div className="nav-container">
                     {/* Left: Logo */}
                     <Link to="/" className="logo">
                         Winners Superfrip
@@ -51,6 +65,15 @@ const Header = () => {
                     <div className="nav-right">
                         {/* Desktop Auth */}
                         <div className="auth-desktop">
+                            <button className="cart-btn" onClick={toggleCart}>
+                                <motion.div
+                                    animate={cartBump ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <ShoppingBag size={22} />
+                                </motion.div>
+                                {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
+                            </button>
                             {currentUser ? (
                                 <div className="auth-actions">
                                     {currentUser.email === 'anis.federe@gmail.com' && (
@@ -81,42 +104,58 @@ const Header = () => {
                 </div>
 
                 {/* Mobile Menu Overlay */}
-                <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
-                    {/* Mobile Auth (Top) */}
-                    <div className="mobile-auth-top">
-                        {currentUser ? (
-                            <div className="mobile-user-info">
-                                <div className="user-info-top">
-                                    <div className="user-avatar">
-                                        <User size={24} />
-                                    </div>
-                                    <span className="user-name">Bienvenue, {currentUser.displayName || currentUser.email.split('@')[0]}</span>
-                                </div>
-                                <div className="mobile-auth-actions">
-                                    {currentUser.email === 'anis.federe@gmail.com' && (
-                                        <Link to="/admin" className={`admin-link ${isActive('/admin')}`} onClick={() => setIsMenuOpen(false)}>Admin</Link>
-                                    )}
-                                    <button onClick={handleLogoutClick} className="logout-btn mobile-logout">
-                                        Déconnexion
+                <AnimatePresence>
+                    {isMenuOpen && (
+                        <motion.div
+                            className="mobile-menu open"
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: "tween", duration: 0.3 }}
+                        >
+                            {/* Mobile Auth (Top) */}
+                            <div className="mobile-auth-top">
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
+                                    <button className="cart-btn" onClick={() => { toggleCart(); setIsMenuOpen(false); }} style={{ color: 'black' }}>
+                                        <ShoppingBag size={24} />
+                                        {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
                                     </button>
                                 </div>
+                                {currentUser ? (
+                                    <div className="mobile-user-info">
+                                        <div className="user-info-top">
+                                            <div className="user-avatar">
+                                                <User size={24} />
+                                            </div>
+                                            <span className="user-name">Bienvenue, {currentUser.displayName || currentUser.email.split('@')[0]}</span>
+                                        </div>
+                                        <div className="mobile-auth-actions">
+                                            {currentUser.email === 'anis.federe@gmail.com' && (
+                                                <Link to="/admin" className={`admin-link ${isActive('/admin')}`} onClick={() => setIsMenuOpen(false)}>Admin</Link>
+                                            )}
+                                            <button onClick={handleLogoutClick} className="logout-btn mobile-logout">
+                                                Déconnexion
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mobile-login-container">
+                                        <span className="welcome-text">Bienvenue !</span>
+                                        <Link to="/login" className="login-link mobile-login-btn" onClick={() => setIsMenuOpen(false)}>Connexion</Link>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <div className="mobile-login-container">
-                                <span className="welcome-text">Bienvenue !</span>
-                                <Link to="/login" className="login-link mobile-login-btn" onClick={() => setIsMenuOpen(false)}>Connexion</Link>
-                            </div>
-                        )}
-                    </div>
 
-                    <nav className="mobile-nav-links">
-                        <Link to="/" className={isActive('/')} onClick={() => setIsMenuOpen(false)}>Accueil</Link>
-                        <Link to="/shop" className={isActive('/shop')} onClick={() => setIsMenuOpen(false)}>Boutique</Link>
-                        <Link to="/how-it-works" className={isActive('/how-it-works')} onClick={() => setIsMenuOpen(false)}>Comment ça marche</Link>
-                        <Link to="/about" className={isActive('/about')} onClick={() => setIsMenuOpen(false)}>A propos</Link>
-                        <Link to="/contact" className={isActive('/contact')} onClick={() => setIsMenuOpen(false)}>Contact</Link>
-                    </nav>
-                </div>
+                            <nav className="mobile-nav-links">
+                                <Link to="/" className={isActive('/')} onClick={() => setIsMenuOpen(false)}>Accueil</Link>
+                                <Link to="/shop" className={isActive('/shop')} onClick={() => setIsMenuOpen(false)}>Boutique</Link>
+                                <Link to="/how-it-works" className={isActive('/how-it-works')} onClick={() => setIsMenuOpen(false)}>Comment ça marche</Link>
+                                <Link to="/about" className={isActive('/about')} onClick={() => setIsMenuOpen(false)}>A propos</Link>
+                                <Link to="/contact" className={isActive('/contact')} onClick={() => setIsMenuOpen(false)}>Contact</Link>
+                            </nav>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
             {/* Logout Confirmation Modal */}

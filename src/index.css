@@ -101,8 +101,8 @@ img {
 
 .btn:hover {
   background-color: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {

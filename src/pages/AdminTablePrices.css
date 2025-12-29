@@ -1,0 +1,18 @@
+/* Price Display in Table */
+.admin-price-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-old-price {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    text-decoration: line-through;
+}
+
+.admin-promo-price {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 0.95rem;
+}

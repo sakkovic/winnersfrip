@@ -1,9 +1,17 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+import { pageTransition } from '../utils/animations';
 import './StaticPages.css';
 
 const About = () => {
     return (
-        <div className="static-page container">
+        <motion.div
+            className="static-page container"
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={pageTransition}
+        >
             <h1 className="page-title">Notre Histoire</h1>
 
             <div className="about-content">
@@ -30,7 +38,7 @@ const About = () => {
                     <img src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80" alt="Notre boutique" />
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

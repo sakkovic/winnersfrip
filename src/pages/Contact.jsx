@@ -1,11 +1,19 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Instagram, Facebook, Video } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { pageTransition } from '../utils/animations';
 import './StaticPages.css';
 import Map from '../components/Map';
 
 const Contact = () => {
     return (
-        <div className="static-page container">
+        <motion.div
+            className="static-page container"
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={pageTransition}
+        >
             <div className="contact-frida-layout">
                 <div className="contact-frida-content">
                     {/* Left Column: Info & Hours */}
@@ -60,7 +68,7 @@ const Contact = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

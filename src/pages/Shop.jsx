@@ -1,14 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import ProductCard from '../components/ProductCard';
 import ReservationModal from '../components/ReservationModal';
 import { useProducts } from '../hooks/useProducts';
+import { useCart } from '../context/CartContext';
+import { pageTransition, staggerContainer, slideUp } from '../utils/animations';
 import './Shop.css';
 
 const Shop = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { products, loading, error } = useProducts();
+    const { addToCart } = useCart();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -22,7 +28,8 @@ const Shop = () => {
         style: [],
         gender: [],
         color: [],
-        priceRange: []
+        priceRange: [],
+        promotions: false
     });
     const [sort, setSort] = useState('newest');
 
@@ -98,6 +105,9 @@ const Shop = () => {
             // Price Range
             if (!checkPriceRange(product.price, filters.priceRange)) return false;
 
+            // Promotions
+            if (filters.promotions && !product.isPromo) return false;
+
             return true;
         }).sort((a, b) => {
             if (sort === 'price-asc') return a.price - b.price;
@@ -105,9 +115,6 @@ const Shop = () => {
             return 0; // Default to original order (newest usually)
         });
     }, [products, searchTerm, filters, sort]);
-
-    if (loading) return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>Chargement des produits...</div>;
-    if (error) return <div className="container" style={{ padding: '2rem', textAlign: 'center', color: 'red' }}>Erreur de chargement: {error.message}</div>;
 
     const FilterSection = ({ title, sectionKey, options, type = 'checkbox' }) => (
         <div className="filter-group">
@@ -132,8 +139,16 @@ const Shop = () => {
         </div>
     );
 
+    if (error) return <div className="container" style={{ padding: '2rem', textAlign: 'center', color: 'red' }}>Erreur de chargement: {error.message}</div>;
+
     return (
-        <div className="shop-page container">
+        <motion.div
+            className="shop-page container"
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={pageTransition}
+        >
             <div className="shop-header">
                 <h1 className="page-title">Boutique</h1>
 
@@ -169,8 +184,6 @@ const Shop = () => {
                         <button className="close-sidebar" onClick={() => setIsFilterOpen(false)}><X size={24} /></button>
                     </div>
 
-
-
                     <FilterSection
                         title="Prix"
                         sectionKey="price"
@@ -181,6 +194,23 @@ const Shop = () => {
                             { value: '100+', label: 'Plus de 100€' }
                         ]}
                     />
+
+                    {/* Promotions Filter */}
+                    <div className="filter-group">
+                        <div className="filter-header" style={{ cursor: 'default' }}>
+                            <h4>Promotions</h4>
+                        </div>
+                        <div className="filter-options">
+                            <label className="checkbox-label" style={{ fontWeight: 'bold', color: '#dc2626' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={filters.promotions}
+                                    onChange={() => setFilters(prev => ({ ...prev, promotions: !prev.promotions }))}
+                                />
+                                Uniquement en Promotion
+                            </label>
+                        </div>
+                    </div>
 
                     <FilterSection
                         title="Genre"
@@ -244,22 +274,44 @@ const Shop = () => {
 
                 {/* Product Grid */}
                 <main className="shop-grid">
-                    <div className="results-count">{filteredProducts.length} articles trouvés</div>
+                    <div className="results-count">
+                        {loading ? 'Chargement...' : `${filteredProducts.length} articles trouvés`}
+                    </div>
 
-                    {filteredProducts.length > 0 ? (
+                    {loading ? (
                         <div className="product-grid">
-                            {filteredProducts.map(product => (
-                                <div key={product.id} className="shop-product-wrapper">
-                                    <ProductCard product={product} />
-                                    <button
-                                        className="btn-reserve-quick"
-                                        onClick={() => setSelectedProduct(product)}
-                                    >
-                                        Réserver
-                                    </button>
+                            {[1, 2, 3, 4, 5, 6].map((n) => (
+                                <div key={n} className="shop-product-wrapper">
+                                    <div className="product-card">
+                                        <Skeleton height={300} />
+                                        <Skeleton count={2} />
+                                    </div>
                                 </div>
                             ))}
                         </div>
+                    ) : filteredProducts.length > 0 ? (
+                        <motion.div
+                            className="product-grid"
+                            variants={staggerContainer}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            {filteredProducts.map(product => (
+                                <motion.div
+                                    key={product.id}
+                                    className="shop-product-wrapper"
+                                    variants={slideUp}
+                                >
+                                    <ProductCard product={product} />
+                                    <button
+                                        className="btn-reserve-quick"
+                                        onClick={() => addToCart(product)}
+                                    >
+                                        Ajouter au panier
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </motion.div>
                     ) : (
                         <div className="no-results">
                             <p>Aucun article ne correspond à vos critères.</p>
@@ -276,7 +328,7 @@ const Shop = () => {
                 isOpen={!!selectedProduct}
                 onClose={() => setSelectedProduct(null)}
             />
-        </div>
+        </motion.div>
     );
 };
 

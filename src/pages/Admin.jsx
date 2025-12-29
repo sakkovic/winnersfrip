@@ -34,7 +34,9 @@ const Admin = () => {
         condition: 'seconde_main',
         size: '',
         brand: '',
-        material: ''
+        material: '',
+        isPromo: false,
+        promoPrice: ''
     });
 
     // Image Upload State
@@ -43,6 +45,22 @@ const Admin = () => {
     const [uploadError, setUploadError] = useState(null);
     const [previewImages, setPreviewImages] = useState([]);
     const fileInputRef = useRef(null);
+
+    // Validation State
+    const [promoError, setPromoError] = useState('');
+
+    // Validation Effect
+    useEffect(() => {
+        if (formData.isPromo && formData.promoPrice) {
+            if (Number(formData.promoPrice) >= Number(formData.price)) {
+                setPromoError('Le prix promo doit être inférieur au prix normal.');
+            } else {
+                setPromoError('');
+            }
+        } else {
+            setPromoError('');
+        }
+    }, [formData.price, formData.promoPrice, formData.isPromo]);
 
     // Fetch Products
     const fetchProducts = async () => {
@@ -93,7 +111,9 @@ const Admin = () => {
             condition: 'seconde_main',
             size: '',
             brand: '',
-            material: ''
+            material: '',
+            isPromo: false,
+            promoPrice: ''
         });
         setPreviewImages([]);
         setView('form');
@@ -116,7 +136,9 @@ const Admin = () => {
             condition: product.condition || 'seconde_main',
             size: product.size || '',
             brand: product.brand || '',
-            material: product.material || ''
+            material: product.material || '',
+            isPromo: product.isPromo || false,
+            promoPrice: product.promoPrice || ''
         });
 
         const images = product.images || (product.image ? [product.image] : []);
@@ -211,6 +233,9 @@ const Admin = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (promoError) return; // Prevent submit if validation fails
+
         setIsSubmitting(true);
         setUploadError(null);
         setUploadProgress(0);
@@ -245,6 +270,7 @@ const Admin = () => {
             const productData = {
                 ...formData,
                 price: Number(formData.price),
+                promoPrice: formData.promoPrice ? Number(formData.promoPrice) : null,
                 images: imageUrls,
                 image: imageUrls[0] || '', // Backwards compatibility
                 updatedAt: new Date(),
@@ -297,16 +323,24 @@ const Admin = () => {
     // Reservation Actions
     const handleCancelReservation = async (reservation, e) => {
         if (e) e.stopPropagation();
-        if (!window.confirm("Annuler cette réservation et remettre le produit en vente ?")) return;
+        if (!window.confirm("Annuler cette réservation et remettre les produits en vente ?")) return;
 
         try {
-            // 1. Update Reservation status
             await updateDoc(doc(db, "reservations", reservation.id), {
                 status: 'cancelled'
             });
 
-            // 2. Update Product status (if productId exists)
-            if (reservation.productId) {
+            // Handle multi-item
+            if (reservation.items && reservation.items.length > 0) {
+                const batch = writeBatch(db);
+                reservation.items.forEach(item => {
+                    const productRef = doc(db, "products", item.id);
+                    batch.update(productRef, { status: 'available', reservedBy: null });
+                });
+                await batch.commit();
+            }
+            // Handle legacy single-item
+            else if (reservation.productId) {
                 await updateDoc(doc(db, "products", reservation.productId), {
                     status: 'available',
                     reservedBy: null
@@ -323,15 +357,22 @@ const Admin = () => {
 
     const handleConfirmReservation = async (reservation, e) => {
         if (e) e.stopPropagation();
-        if (!window.confirm("Confirmer la vente de cet article ?")) return;
+        if (!window.confirm("Confirmer la vente ?")) return;
 
         try {
             await updateDoc(doc(db, "reservations", reservation.id), {
                 status: 'confirmed'
             });
 
-            // Product remains 'reserved' or change to 'sold' if you prefer
-            if (reservation.productId) {
+            if (reservation.items && reservation.items.length > 0) {
+                const batch = writeBatch(db);
+                reservation.items.forEach(item => {
+                    const productRef = doc(db, "products", item.id);
+                    batch.update(productRef, { status: 'sold' });
+                });
+                await batch.commit();
+            }
+            else if (reservation.productId) {
                 await updateDoc(doc(db, "products", reservation.productId), {
                     status: 'sold'
                 });
@@ -439,7 +480,16 @@ const Admin = () => {
                                                         </td>
                                                         <td>{product.name}</td>
                                                         <td><span className="badge">{product.category}</span></td>
-                                                        <td>{product.price}€</td>
+                                                        <td>
+                                                            {product.isPromo && product.promoPrice ? (
+                                                                <div className="admin-price-container">
+                                                                    <span className="admin-old-price">{product.price}€</span>
+                                                                    <span className="admin-promo-price">{product.promoPrice}€</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span>{product.price}€</span>
+                                                            )}
+                                                        </td>
                                                         <td>{product.condition}</td>
                                                         <td>
                                                             <span className={`status-badge ${product.status || 'available'}`}>
@@ -489,9 +539,24 @@ const Admin = () => {
                                         reservations.map(res => (
                                             <tr key={res.id}>
                                                 <td>
-                                                    <div className="res-product">
-                                                        <img src={res.productImage} alt="" width="40" />
-                                                        <span>{res.productName}</span>
+                                                    <div className="res-product-cell">
+                                                        {res.items ? (
+                                                            <div className="res-items-list">
+                                                                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{res.items.length} Article(s)</div>
+                                                                {res.items.slice(0, 3).map((item, idx) => (
+                                                                    <div key={idx} className="res-product-mini" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+                                                                        <img src={item.image} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
+                                                                        <span style={{ fontSize: '0.85rem' }}>{item.name}</span>
+                                                                    </div>
+                                                                ))}
+                                                                {res.items.length > 3 && <span style={{ fontSize: '0.8rem', color: '#666' }}>+ {res.items.length - 3} autres...</span>}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="res-product">
+                                                                <img src={res.productImage} alt="" width="40" />
+                                                                <span>{res.productName}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td>{res.userName}</td>
@@ -572,6 +637,30 @@ const Admin = () => {
                                 <option value="seconde_main">Seconde Main (Générique)</option>
                             </select>
                         </div>
+                    </div>
+
+                    {/* Promotions */}
+                    <div className="form-row" style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #dcfce7' }}>
+                        <div className="form-group checkbox" style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
+                            <label style={{ color: '#166534', fontWeight: 'bold' }}>
+                                <input type="checkbox" name="isPromo" checked={formData.isPromo} onChange={handleChange} />
+                                En Promotion ?
+                            </label>
+                        </div>
+                        {formData.isPromo && (
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label style={{ color: '#166534' }}>Prix Promo (€)</label>
+                                <input
+                                    type="number"
+                                    name="promoPrice"
+                                    value={formData.promoPrice}
+                                    onChange={handleChange}
+                                    placeholder="Prix réduit"
+                                    style={{ borderColor: promoError ? 'red' : '' }}
+                                />
+                                {promoError && <span style={{ color: 'red', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>{promoError}</span>}
+                            </div>
+                        )}
                     </div>
 
                     {/* Categories & Details */}

@@ -1,11 +1,19 @@
 import React from 'react';
 import { ShoppingBag, MessageCircle, CheckCircle, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { pageTransition } from '../utils/animations';
 import './StaticPages.css';
 
 const HowItWorks = () => {
     return (
-        <div className="static-page container">
+        <motion.div
+            className="static-page container"
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={pageTransition}
+        >
             <h1 className="page-title">Comment ça marche ?</h1>
 
             <div className="steps-container">
@@ -29,8 +37,8 @@ const HowItWorks = () => {
 
                 <div className="step-card">
                     <div className="step-icon"><CreditCard size={40} /></div>
-                    <h3>4. Paiement & Livraison</h3>
-                    <p>Payez à la livraison ou par virement. Récupérez votre commande ou faites-vous livrer.</p>
+                    <h3>4. Paiement & Retrait</h3>
+                    <p>Le paiement se fait sur place lors du retrait de votre commande en boutique.</p>
                 </div>
             </div>
 
@@ -38,7 +46,7 @@ const HowItWorks = () => {
                 <h2>Prêt à trouver votre style ?</h2>
                 <Link to="/shop" className="btn">Voir la boutique</Link>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

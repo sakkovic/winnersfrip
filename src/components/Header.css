@@ -24,8 +24,8 @@
     width: 100%;
     height: 100%;
     max-width: 100%;
-    padding: 0 0 0 2rem;
-    /* Remove right padding to allow auth strip to touch edge */
+    padding: 0 1rem;
+    /* Minimal horizontal padding for full-width look */
     margin: 0;
     position: relative;
 }
@@ -43,16 +43,16 @@
     height: 100%;
 }
 
-/* Center Navigation */
+/* Center Navigation - Flex Centering (Safe) */
 .nav-center {
     display: flex;
-    gap: 1.5rem;
+    gap: 2rem;
     justify-content: center;
     align-items: center;
     flex: 1;
-    margin: 0 2rem;
-    /* Balanced margins */
     height: 100%;
+    /* Ensure it doesn't overlap with the sloped background */
+    z-index: 5;
 }
 
 .nav-center a {
@@ -99,20 +99,59 @@
     background-color: var(--accent-color);
     height: 100%;
     /* Full height */
-    padding: 0 4rem 0 6rem;
-    /* Increased padding for visual balance */
+    padding: 0 2rem 0 5rem;
+    /* Minimized right padding, ample left padding for slope */
     clip-path: polygon(40px 0, 100% 0, 100% 100%, 0% 100%);
     color: white;
     z-index: 10;
     flex-shrink: 0;
-    margin-right: 0;
-    /* No negative margin needed */
+    margin-left: auto;
+    /* Push to right just in case */
 }
 
 .auth-desktop {
     display: flex;
     align-items: center;
     height: 100%;
+}
+
+/* Cart Icon Styling */
+.cart-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    /* White icon on green background */
+    transition: transform 0.2s;
+    margin-right: 1.5rem;
+}
+
+.cart-btn:hover {
+    transform: scale(1.1);
+}
+
+.cart-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background-color: white;
+    /* Contrast badge */
+    color: var(--accent-color);
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .auth-actions {

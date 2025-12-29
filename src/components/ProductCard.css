@@ -1,38 +1,33 @@
 .product-card {
     background: white;
-    border: none;
-    /* Removed default border */
-    border-radius: 0;
-    /* Reference looks sharper, maybe slight radius or none */
+    border-radius: 8px;
     overflow: hidden;
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    height: 100%;
 }
 
 .product-card:hover {
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-    border-color: transparent;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .product-image {
     position: relative;
-    height: 320px;
-    /* Slightly taller for better breathing room */
+    padding-top: 133%;
+    /* 4:3 Aspect Ratio */
     overflow: hidden;
-    background-color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    /* Add padding inside image box */
+    background-color: #f4f4f4;
 }
 
 .product-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     transition: transform 0.5s ease;
 }
 
@@ -40,81 +35,104 @@
     transform: scale(1.05);
 }
 
-.badge {
+/* Badges */
+.badge,
+.badge-new,
+.badge-promo {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 4px 10px;
-    border-radius: 2px;
+    padding: 4px 8px;
+    border-radius: 4px;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
-    z-index: 1;
-    letter-spacing: 0.5px;
+    z-index: 2;
 }
 
 .badge-new {
-    position: absolute;
     top: 10px;
     left: 10px;
     background-color: var(--accent-color);
     color: white;
-    padding: 4px 10px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    z-index: 1;
 }
 
 .badge.second-hand {
-    background-color: #e67e22;
+    top: 10px;
+    right: 10px;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+
+.badge-promo {
+    top: 10px;
+    left: 10px;
+    background-color: #dc2626;
+    /* Red for Promo */
     color: white;
-    top: 40px;
+}
+
+/* If both New and Promo exist, stack them or shift positions */
+.badge-new+.badge-promo {
+    top: 35px;
+    /* Stack below */
 }
 
 .product-info {
-    padding: 1.5rem 1rem;
-    text-align: center;
-    flex-grow: 1;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    background: white;
+    flex-grow: 1;
 }
 
 .product-brand {
-    color: #888;
     font-size: 0.85rem;
-    font-weight: 700;
+    color: #666;
     text-transform: uppercase;
-    margin: 0;
-    letter-spacing: 1px;
+    margin-bottom: 4px;
+    font-weight: 500;
 }
 
 .product-title {
-    margin: 0;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
     line-height: 1.4;
+    color: var(--text-main);
 }
 
 .product-title a {
-    color: #000;
     text-decoration: none;
-    font-weight: 800;
-    /* Bold like reference */
-    text-transform: uppercase;
-    transition: color 0.2s;
+    color: inherit;
 }
 
 .product-title a:hover {
     color: var(--accent-color);
 }
 
-.product-info .price {
-    font-weight: 500;
-    color: #333;
-    font-size: 1rem;
-    margin-top: 0.5rem;
+.price {
+    font-weight: 700;
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    margin-top: auto;
 }
 
-/* Remove button styles as we removed the button */
+/* Promo Price Styling */
+.price-container {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.price-original {
+    font-size: 0.95rem;
+    color: #9ca3af;
+    text-decoration: line-through;
+}
+
+.price-promo {
+    font-weight: 700;
+    color: #dc2626;
+    /* Red for Promo */
+    font-size: 1.15rem;
+}
