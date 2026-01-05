@@ -10,6 +10,7 @@ const Auth = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [phone, setPhone] = useState('+216 ');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -48,6 +49,10 @@ const Auth = () => {
 
     const handleSignup = async (e) => {
         e.preventDefault();
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+            return setError('Le mot de passe ne respecte pas les critères de sécurité.');
+        }
+
         if (password !== confirmPassword) {
             return setError('Les mots de passe ne correspondent pas.');
         }
@@ -61,6 +66,7 @@ const Auth = () => {
             await setDoc(doc(db, "users", user.uid), {
                 name: name,
                 email: email,
+                phone: phone,
                 role: name === 'Admin' ? 'admin' : 'client',
                 createdAt: new Date()
             });
@@ -101,8 +107,31 @@ const Auth = () => {
                         </div>
                         <span>ou utiliser votre email pour l'inscription</span>
                         <input type="text" placeholder="Nom" value={name} onChange={(e) => setName(e.target.value)} required />
+                        <div className="form-group phone-input-container">
+                            <span className="flag-icon">🇹🇳</span>
+                            <input type="tel" placeholder="Téléphone (+216...)" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                        </div>
                         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                         <input type="password" placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} required />
+
+                        {/* Password Strength Indicators */}
+                        {password && (
+                            <div className="password-requirements">
+                                <p>Le mot de passe doit contenir :</p>
+                                <ul>
+                                    <li className={password.length >= 8 ? 'valid' : 'invalid'}>
+                                        Minimum 8 caractères
+                                    </li>
+                                    <li className={/[A-Z]/.test(password) ? 'valid' : 'invalid'}>
+                                        Une lettre majuscule
+                                    </li>
+                                    <li className={/[0-9]/.test(password) ? 'valid' : 'invalid'}>
+                                        Un chiffre
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+
                         <input type="password" placeholder="Confirmer MDP" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                         {error && isSignUp && <p className="error-text">{error}</p>}
                         <button type="submit" disabled={loading}>{loading ? 'Création...' : 'S\'INSCRIRE'}</button>

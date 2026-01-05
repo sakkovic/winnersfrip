@@ -113,13 +113,32 @@
 
 .form-group input {
     width: 100%;
-    padding: 12px 15px;
+    padding: 12px 20px;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 30px;
     font-size: 1rem;
     transition: border-color 0.3s ease;
     background-color: #f9f9f9;
     font-family: var(--font-main);
+}
+
+.phone-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.flag-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    z-index: 10;
+}
+
+.phone-input-container input {
+    padding-left: 45px !important;
 }
 
 .form-group input:focus {
@@ -133,7 +152,7 @@
     color: white;
     padding: 14px;
     border: none;
-    border-radius: 8px;
+    border-radius: 30px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -242,4 +261,53 @@
     .auth-container {
         padding: 2rem 1rem;
     }
+}
+
+/* Password Validation Styles */
+.password-requirements {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #666;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.password-requirements p {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.password-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.password-requirements li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+    color: #888;
+}
+
+.password-requirements li.valid {
+    color: var(--accent-color);
+}
+
+.password-requirements li.invalid {
+    color: #ccc;
+}
+
+.password-requirements li::before {
+    content: '•';
+    margin-right: 8px;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.password-requirements li.valid::before {
+    content: '✓';
+    color: var(--accent-color);
 }

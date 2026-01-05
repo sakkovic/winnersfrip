@@ -31,40 +31,47 @@ const Contact = () => {
                             </div>
                         </div>
 
-                        <div className="frida-contact-section">
-                            <p className="frida-phone">+216 XX XXX XXX</p>
-                            <p className="frida-email">CONTACT@WINNERS.COM</p>
-                        </div>
+                        <p className="frida-phone">+216 XX XXX XXX</p>
+                        <p className="frida-email">CONTACT@WINNERS.COM</p>
+                    </div>
 
-                        <div className="frida-social-icons">
-                            <a href="#"><Facebook size={24} /></a>
-                            <a href="#"><Instagram size={24} /></a>
-                        </div>
+                    <div className="frida-contact-section europe-section" style={{ marginTop: '2rem' }}>
+                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--accent-color)' }}>COMMANDES EUROPE & LIVRAISON</h3>
+                        <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Pour commander des produits d'Europe avec livraison :</p>
+                        <a href="https://wa.me/33600000000" target="_blank" rel="noopener noreferrer" className="whatsapp-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#25D366', fontWeight: 'bold', textDecoration: 'none' }}>
+                            <Phone size={20} />
+                            WhatsApp : +33 6 XX XX XX XX
+                        </a>
+                    </div>
 
-                        <div className="frida-hours-section">
-                            <h3>HEURES D'OUVERTURE</h3>
-                            <div className="hours-grid">
-                                <div className="hours-col">
-                                    <p className="day-range">DIMANCHE AU MERCREDI</p>
-                                    <p className="time-range">09H00 À 21H00</p>
-                                </div>
-                                <div className="hours-col">
-                                    <p className="day-range">JEUDI AU SAMEDI</p>
-                                    <p className="time-range">09H00 À 22H00</p>
-                                </div>
+                    <div className="frida-social-icons">
+                        <a href="#"><Facebook size={24} /></a>
+                        <a href="#"><Instagram size={24} /></a>
+                    </div>
+
+                    <div className="frida-hours-section">
+                        <h3>HEURES D'OUVERTURE</h3>
+                        <div className="hours-grid">
+                            <div className="hours-col">
+                                <p className="day-range">DIMANCHE AU MERCREDI</p>
+                                <p className="time-range">09H00 À 21H00</p>
                             </div>
-                        </div>
-
-                        <div className="frida-footer-note">
-                            <p>© {new Date().getFullYear()} WINNERS SUPERFRIP</p>
+                            <div className="hours-col">
+                                <p className="day-range">JEUDI AU SAMEDI</p>
+                                <p className="time-range">09H00 À 22H00</p>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Right Column: Map */}
-                    <div className="frida-map-right">
-                        <div className="map-frame">
-                            <Map />
-                        </div>
+                    <div className="frida-footer-note">
+                        <p>© {new Date().getFullYear()} WINNERS SUPERFRIP</p>
+                    </div>
+                </div>
+
+                {/* Right Column: Map */}
+                <div className="frida-map-right">
+                    <div className="map-frame">
+                        <Map />
                     </div>
                 </div>
             </div>

@@ -65,15 +65,17 @@ const Header = () => {
                     <div className="nav-right">
                         {/* Desktop Auth */}
                         <div className="auth-desktop">
-                            <button className="cart-btn" onClick={toggleCart}>
-                                <motion.div
-                                    animate={cartBump ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <ShoppingBag size={22} />
-                                </motion.div>
-                                {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
-                            </button>
+                            {currentUser && (
+                                <button className="cart-btn" onClick={toggleCart}>
+                                    <motion.div
+                                        animate={cartBump ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <ShoppingBag size={22} />
+                                    </motion.div>
+                                    {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
+                                </button>
+                            )}
                             {currentUser ? (
                                 <div className="auth-actions">
                                     {currentUser.email === 'anis.federe@gmail.com' && (
@@ -116,10 +118,12 @@ const Header = () => {
                             {/* Mobile Auth (Top) */}
                             <div className="mobile-auth-top">
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
-                                    <button className="cart-btn" onClick={() => { toggleCart(); setIsMenuOpen(false); }} style={{ color: 'black' }}>
-                                        <ShoppingBag size={24} />
-                                        {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
-                                    </button>
+                                    {currentUser && (
+                                        <button className="cart-btn" onClick={() => { toggleCart(); setIsMenuOpen(false); }} style={{ color: 'black' }}>
+                                            <ShoppingBag size={24} />
+                                            {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
+                                        </button>
+                                    )}
                                 </div>
                                 {currentUser ? (
                                     <div className="mobile-user-info">

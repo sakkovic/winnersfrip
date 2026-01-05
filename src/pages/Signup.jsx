@@ -7,6 +7,7 @@ import './Login.css'; // Reuse login styles
 
 const Signup = () => {
     const [name, setName] = useState('');
+    const [phone, setPhone] = useState('+216 ');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,6 +18,10 @@ const Signup = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+            return setError('Le mot de passe ne respecte pas les critères de sécurité.');
+        }
 
         if (password !== confirmPassword) {
             return setError('Les mots de passe ne correspondent pas.');
@@ -32,6 +37,7 @@ const Signup = () => {
             await setDoc(doc(db, "users", user.uid), {
                 name: name,
                 email: email,
+                phone: phone,
                 role: name === 'Admin' ? 'admin' : 'client', // Backdoor for testing
                 createdAt: new Date()
             });
@@ -88,6 +94,16 @@ const Signup = () => {
                                     required
                                 />
                             </div>
+                            <div className="form-group phone-input-container">
+                                <span className="flag-icon">🇹🇳</span>
+                                <input
+                                    type="tel"
+                                    placeholder="Téléphone (+216...)"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    required
+                                />
+                            </div>
                             <div className="form-group">
                                 <input
                                     type="email"
@@ -105,6 +121,22 @@ const Signup = () => {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
+                                {password && (
+                                    <div className="password-requirements">
+                                        <p>Le mot de passe doit contenir :</p>
+                                        <ul>
+                                            <li className={password.length >= 8 ? 'valid' : 'invalid'}>
+                                                Minimum 8 caractères
+                                            </li>
+                                            <li className={/[A-Z]/.test(password) ? 'valid' : 'invalid'}>
+                                                Une lettre majuscule
+                                            </li>
+                                            <li className={/[0-9]/.test(password) ? 'valid' : 'invalid'}>
+                                                Un chiffre
+                                            </li>
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                             <div className="form-group">
                                 <input
