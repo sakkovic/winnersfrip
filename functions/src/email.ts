@@ -17,8 +17,8 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 // During the first weeks of operation, until your own boutique domain is
 // verified at Resend, the sandbox sender works fine and gives a real
 // "from boutique" reply-to (any address you own).
-const SENDER_NAME = 'Winners Superfrip';
-const SENDER_FROM = 'Winners Superfrip <onboarding@resend.dev>';
+const SENDER_NAME = 'Winners Mode';
+const SENDER_FROM = 'Winners Mode <onboarding@resend.dev>';
 const REPLY_TO = 'anis.federe@gmail.com';
 
 export interface SendEmailParams {
@@ -98,8 +98,8 @@ export function wrapHtml(opts: { title: string; preheader?: string; body: string
             </tr>
             <tr>
               <td style="padding:0 28px 28px 28px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:18px;">
-                Winners Superfrip · QRFJ+J5R, Monastir, Tunisie<br/>
-                Vous recevez cet email parce que vous avez réservé un article sur winners-superfrip.com.
+                Winners Mode · QRFJ+J5R, Monastir, Tunisie<br/>
+                Vous recevez cet email parce que vous avez réservé un article sur winners-mode.com.
               </td>
             </tr>
           </table>

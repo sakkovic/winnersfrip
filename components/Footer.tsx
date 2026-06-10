@@ -77,7 +77,7 @@ export default function Footer() {
               ].map(({ Icon, label }) => (
                 <a
                   key={label}
-                  href={label === 'Instagram' ? 'https://instagram.com/winners.superfrip' : label === 'Facebook' ? 'https://facebook.com/winners.superfrip' : '#'}
+                  href={label === 'Instagram' ? 'https://instagram.com/winners.mode' : label === 'Facebook' ? 'https://facebook.com/winners.mode' : '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}

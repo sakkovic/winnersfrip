@@ -40,7 +40,7 @@ setGlobalOptions({ region: 'europe-west1', maxInstances: 5 });
 const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 
 const ADMIN_EMAIL = 'anis.federe@gmail.com';
-const SITE_URL = 'https://winners-superfrip.com'; // adjust when domain ships
+const SITE_URL = 'https://winners-mode.com'; // adjust when domain ships
 const CONTACT_PHONE = '+216 55 560 552';
 
 // ── Types ────────────────────────────────────────────────────────────────────

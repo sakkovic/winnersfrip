@@ -26,7 +26,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://winners-superfrip.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://winners-mode.vercel.app'),
   title: { default: 'Winners Mode — Mode & Beauté', template: '%s | Winners Mode' },
   description: 'Mode vintage, streetwear, parfums, soins, maquillage. Une sélection pointue, importée d\'Europe, à prix doux. Boutique à Monastir.',
   keywords: ['mode', 'vintage', 'streetwear', 'beauté', 'parfum', 'soins', 'cheveux', 'maquillage', 'friperie', 'monastir', 'tunisie'],

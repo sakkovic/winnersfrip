@@ -134,11 +134,11 @@ export default function ContactPage() {
                     </span>
                     {BOUTIQUE.contactPhone}
                   </a>
-                  <a href="mailto:contact@winners-superfrip.com" className="group flex items-center gap-3 text-sm text-gray-700 hover:text-brand-warm transition-colors">
+                  <a href="mailto:contact@winners-mode.com" className="group flex items-center gap-3 text-sm text-gray-700 hover:text-brand-warm transition-colors">
                     <span className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center group-hover:bg-brand-warm group-hover:border-brand-warm transition-all duration-300">
                       <Mail size={13} className="text-gray-500 group-hover:text-white transition-colors" />
                     </span>
-                    contact@winners-superfrip.com
+                    contact@winners-mode.com
                   </a>
                 </div>
               </div>
@@ -150,8 +150,8 @@ export default function ContactPage() {
                 </h3>
                 <div className="flex gap-3">
                   {[
-                    { Icon: Instagram, href: 'https://instagram.com/winners.superfrip', label: 'Instagram' },
-                    { Icon: Facebook,  href: 'https://facebook.com/winners.superfrip',  label: 'Facebook'  },
+                    { Icon: Instagram, href: 'https://instagram.com/winners.mode', label: 'Instagram' },
+                    { Icon: Facebook,  href: 'https://facebook.com/winners.mode',  label: 'Facebook'  },
                   ].map(({ Icon, href, label }) => (
                     <a
                       key={label}
