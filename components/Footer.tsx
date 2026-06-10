@@ -64,7 +64,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-1 lg:col-span-2 flex flex-col items-center sm:items-start text-center sm:text-left">
             <span className="font-display text-lg tracking-tight block mb-2">
-              Winners<span className="text-gold-gradient italic mx-0.5">·</span>Superfrip
+              Winners<span className="text-gold-gradient italic mx-0.5">·</span>Mode
             </span>
             <p className="hidden sm:block text-gray-400 text-xs leading-relaxed mb-4 max-w-xs">
               La mode durable, vintage et streetwear. Pièces uniques importées d&apos;Europe.
@@ -138,7 +138,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="mt-5 sm:mt-6 pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-gray-500 text-[10px] sm:text-xs">
-            © {new Date().getFullYear()} Winners Superfrip. Tous droits réservés.
+            © {new Date().getFullYear()} Winners Mode. Tous droits réservés.
           </p>
           <div className="flex items-center gap-5">
             <Link href="/privacy" className="text-gray-500 hover:text-gray-300 text-[10px] sm:text-xs transition-colors">

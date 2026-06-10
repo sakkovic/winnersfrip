@@ -3,9 +3,9 @@ import { BOUTIQUE } from '@/lib/boutique-rules';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Politique de confidentialité — Winners Superfrip',
+  title: 'Politique de confidentialité — Winners Mode',
   description:
-    'Comment Winners Superfrip collecte, utilise et protège vos données personnelles.',
+    'Comment Winners Mode collecte, utilise et protège vos données personnelles.',
 };
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       <section>
         <h2 className="font-display text-2xl mb-3 text-brand-black not-italic">1. Qui sommes-nous ?</h2>
         <p className="text-sm text-gray-600 leading-relaxed">
-          Winners Superfrip est une boutique située à Monastir, Tunisie ({BOUTIQUE.address}).
+          Winners Mode est une boutique située à Monastir, Tunisie ({BOUTIQUE.address}).
           Nous opérons ce site pour permettre à notre clientèle de découvrir notre
           sélection et de réserver des articles en vue d&apos;un retrait en boutique.
         </p>

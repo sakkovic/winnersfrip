@@ -98,7 +98,7 @@ export default function StoreLocation() {
                   Adresse
                 </h3>
                 <p className="text-gray-700 text-sm leading-relaxed pl-6 border-l-2 border-brand-gold-soft/40">
-                  Winners Superfrip<br />
+                  Winners Mode<br />
                   QRFJ+J5R<br />
                   Monastir, Tunisie
                 </p>
@@ -179,7 +179,7 @@ export default function StoreLocation() {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="absolute inset-0 w-full h-full grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700"
-              title="Carte de la boutique Winners Superfrip"
+              title="Carte de la boutique Winners Mode"
             ></iframe>
           </div>
         </motion.div>

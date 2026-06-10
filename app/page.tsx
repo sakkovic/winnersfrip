@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Winners Superfrip — Mode Vintage & Streetwear',
+  title: 'Winners Mode — Mode Vintage & Streetwear',
   description: 'La mode durable à petit prix. Pièces vintage, seconde main et neuves importées d\'Europe.',
 };
 

@@ -258,7 +258,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
           >
             <Image
               src={cfg.image}
-              alt="Winners Superfrip"
+              alt="Winners Mode"
               fill
               priority
               className="object-cover object-center"
@@ -285,7 +285,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
               Retour
             </Link>
             <span className="text-white text-[10px] tracking-[0.4em] uppercase font-bold">
-              Winners<span className="text-brand-warm">·</span>Superfrip
+              Winners<span className="text-brand-warm">·</span>Mode
             </span>
           </div>
 
@@ -372,7 +372,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
             <ArrowLeft size={14} /> Retour
           </Link>
           <span className="text-[11px] font-bold tracking-[0.25em] uppercase">
-            Winners<span className="text-brand-warm">·</span>Superfrip
+            Winners<span className="text-brand-warm">·</span>Mode
           </span>
         </div>
 

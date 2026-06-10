@@ -3,7 +3,7 @@ import { PICKUP_RULES, BOUTIQUE } from '@/lib/boutique-rules';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'FAQ — Winners Superfrip',
+  title: 'FAQ — Winners Mode',
   description:
     'Questions fréquentes sur les réservations en boutique, le retrait des articles, les modes de paiement et le règlement.',
 };

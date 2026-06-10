@@ -119,7 +119,7 @@ export default function Navbar() {
             <Link href="/" className="flex-shrink-0 group">
               <Image
                 src="/logo.png"
-                alt="Winners Superfrip"
+                alt="Winners Mode"
                 width={120}
                 height={48}
                 className="h-10 w-auto object-contain transition-transform duration-500 ease-expo-out group-hover:scale-[1.04]"
@@ -250,7 +250,7 @@ export default function Navbar() {
             >
               <div className="flex items-center justify-between p-5 border-b border-gray-100">
                 <span className="text-sm font-bold tracking-[0.2em] uppercase">
-                  Winners<span className="text-gold-gradient">·</span>Superfrip
+                  Winners<span className="text-gold-gradient">·</span>Mode
                 </span>
                 <button
                   onClick={() => setIsMenuOpen(false)}

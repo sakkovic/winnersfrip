@@ -4,7 +4,7 @@ import ShopClient from './ShopClient';
 import { getCachedProducts } from '@/lib/products.server';
 
 export const metadata: Metadata = {
-  title: 'Boutique — Winners Superfrip',
+  title: 'Boutique — Winners Mode',
   description: 'Parcourez notre catalogue de vêtements vintage, streetwear et seconde main.',
 };
 

@@ -3,9 +3,9 @@ import { BOUTIQUE, PICKUP_RULES } from '@/lib/boutique-rules';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Conditions générales — Winners Superfrip',
+  title: 'Conditions générales — Winners Mode',
   description:
-    'Conditions générales d\'utilisation et de réservation sur le site Winners Superfrip.',
+    'Conditions générales d\'utilisation et de réservation sur le site Winners Mode.',
 };
 
 export default function TermsPage() {

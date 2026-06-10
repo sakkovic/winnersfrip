@@ -15,7 +15,7 @@ export const BOUTIQUE = {
   contactPhoneE164: '+21655560552',
 
   /** Street address, displayed alongside the rules where relevant. */
-  address: 'Winners Superfrip · QRFJ+J5R, Monastir, Tunisie',
+  address: 'Winners Mode · QRFJ+J5R, Monastir, Tunisie',
 } as const;
 
 /**
