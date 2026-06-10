@@ -225,8 +225,10 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
     try {
       await loginWithGoogle();
       router.push('/');
-    } catch {
-      setError('Connexion Google impossible.');
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? String(err);
+      console.error('[Google Sign-In]', err);
+      setError(`Connexion Google impossible. (${code})`);
     }
   };
 
