@@ -4,7 +4,7 @@ import CollectionSection from '@/components/CollectionSection';
 import BrandValues from '@/components/BrandValues';
 import Newsletter from '@/components/Newsletter';
 import ProductGrid from '@/components/ProductGrid';
-import { getFeaturedProducts, getNewArrivals } from '@/data/products';
+import { getCachedProducts } from '@/lib/products.server';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
@@ -13,9 +13,11 @@ export const metadata: Metadata = {
   description: 'La mode durable à petit prix. Pièces vintage, seconde main et neuves importées d\'Europe.',
 };
 
-export default function HomePage() {
-  // const featured = getFeaturedProducts(4);
-  const newArrivals = getNewArrivals(4);
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const allProducts = await getCachedProducts();
+  const newArrivals = allProducts.filter(p => p.isNewArrival).slice(0, 4);
 
   return (
     <>
