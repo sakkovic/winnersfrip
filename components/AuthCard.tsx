@@ -13,29 +13,29 @@ import { cn } from '@/lib/utils';
 
 type Mode = 'login' | 'register';
 
-// ── Editorial copy per mode ───────────────────────────────────────────────────
+// ── Editorial copy per mode (FR) ─────────────────────────────────────────────
 
 const CONFIG = {
   login: {
     image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1400&q=85',
-    eyebrow: 'مرحبا بيك',
-    headline: ['ستايلك،', 'حكايتك.'],
-    sub: 'قطع فريدة جايبينها من أوروبا. فانتاج، سكوند هاند، ومنتوجات جداد.',
+    eyebrow: 'Bon retour',
+    headline: ['Votre style,', 'votre histoire.'],
+    sub: 'Mode vintage, parfums et soins. Une sélection pointue rapportée d\'Europe.',
     index: '01',
   },
   register: {
     image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1400&q=85',
-    eyebrow: 'اِنضم للعيلة',
-    headline: ['خطوة برك', 'وتلقى ستايلك.'],
-    sub: 'وصول للدروبس، متابعة الطلبيات، وويش ليست متاعك.',
+    eyebrow: 'Rejoignez-nous',
+    headline: ['Un compte,', 'mille possibilités.'],
+    sub: 'Accédez aux nouveautés en avant-première, suivez vos commandes et gardez votre wishlist synchronisée.',
     index: '02',
   },
 };
 
 const PERKS = [
-  'وصول مبكر للمنتوجات الجداد',
-  'تخفيضات خاصة بالأعضاء برك',
-  'ويش ليست وتاريخ المشتريات متزامنين',
+  'Accès anticipé aux nouveautés',
+  'Promotions réservées aux membres',
+  'Wishlist & historique synchronisés',
 ];
 
 // ── Validation helpers ────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ function passwordScore(pw: string): { score: number; label: string; color: strin
   if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
   if (/\d/.test(pw)) s++;
   if (/[^A-Za-z0-9]/.test(pw)) s++;
-  const labels = ['قصيرة برشا', 'ضعيفة', 'متوسطة', 'مليحة', 'قوية', 'ممتازة'];
+  const labels = ['Trop court', 'Faible', 'Moyen', 'Bien', 'Fort', 'Excellent'];
   const colors = ['bg-red-400', 'bg-red-400', 'bg-amber-400', 'bg-yellow-400', 'bg-emerald-500', 'bg-emerald-600'];
   return { score: s, label: labels[s], color: colors[s] };
 }
@@ -84,15 +84,14 @@ function FloatingField({
 }) {
   const [focused, setFocused] = useState(false);
   const isFloating = focused || value.length > 0;
-  const ltrInput = type === 'email' || type === 'password';
 
   return (
-    <div className="relative">
+    /* pt-5 reserves a 20px band above the input where the floating label sits. */
+    <div className="relative pt-5">
       <input
         id={name}
         name={name}
         type={type}
-        dir={ltrInput ? 'ltr' : undefined}
         value={value}
         onChange={onChange}
         onFocus={() => setFocused(true)}
@@ -100,20 +99,19 @@ function FloatingField({
         autoComplete={autoComplete}
         required
         suppressHydrationWarning
+        placeholder=" "
         className={cn(
-          'peer w-full bg-transparent border-b text-sm pt-5 pb-2 outline-none transition-all',
+          'auth-field block w-full bg-transparent border-b text-sm py-2 outline-none transition-colors pl-0 pr-9',
           focused ? 'border-brand-black' : 'border-gray-200',
-          'ps-0 pe-9',
         )}
       />
       <label
         htmlFor={name}
         className={cn(
-          'absolute pointer-events-none transition-all duration-200 ease-out tracking-wide',
-          'start-0',
+          'absolute left-0 pointer-events-none transition-all duration-200 ease-out leading-none',
           isFloating
             ? 'top-0 text-[11px] font-bold tracking-wider text-gray-500'
-            : 'top-1/2 -translate-y-1/2 text-sm text-gray-400',
+            : 'top-[1.95rem] text-sm text-gray-400',
         )}
       >
         {label}
@@ -124,7 +122,7 @@ function FloatingField({
         <motion.span
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="absolute end-0 bottom-2.5 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
+          className="absolute right-0 top-[1.8rem] w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"
         >
           <Check size={9} className="text-white" strokeWidth={3.5} />
         </motion.span>
@@ -132,7 +130,7 @@ function FloatingField({
 
       {/* Right slot (eye toggle etc.) */}
       {rightSlot && !valid && (
-        <div className="absolute end-0 bottom-2 text-gray-400">{rightSlot}</div>
+        <div className="absolute right-0 top-[1.65rem] text-gray-400">{rightSlot}</div>
       )}
     </div>
   );
@@ -199,7 +197,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
       await login(loginForm.email, loginForm.password);
       router.push('/');
     } catch {
-      setError('الإيميل ولا كلمة السر غالطة.');
+      setError('Email ou mot de passe incorrect.');
     } finally {
       setLoading(false);
     }
@@ -208,15 +206,15 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (regForm.password !== regForm.confirm) return setError('كلمات السر ما تتطابقش.');
-    if (regForm.password.length < 6) return setError('أقل شيء 6 أحرف.');
+    if (regForm.password !== regForm.confirm) return setError('Les mots de passe ne correspondent pas.');
+    if (regForm.password.length < 6) return setError('Le mot de passe doit contenir au moins 6 caractères.');
     setLoading(true);
     try {
       await signup(regForm.email, regForm.password, regForm.name);
       router.push('/');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
-      setError(msg.includes('email-already-in-use') ? 'الإيميل هذا مستعمل من قبل.' : 'ما نجمناش نسجلك.');
+      setError(msg.includes('email-already-in-use') ? 'Cet email est déjà utilisé.' : 'Impossible de créer le compte.');
     } finally {
       setLoading(false);
     }
@@ -228,7 +226,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
       await loginWithGoogle();
       router.push('/');
     } catch {
-      setError('ما نجمناش ندخلك بـ Google.');
+      setError('Connexion Google impossible.');
     }
   };
 
@@ -236,7 +234,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
   const passwordsMatch = regForm.confirm.length > 0 && regForm.password === regForm.confirm;
 
   return (
-    <div dir="rtl" className="min-h-screen flex bg-brand-cream relative overflow-hidden font-[system-ui,sans-serif]">
+    <div className="min-h-screen flex bg-brand-cream relative overflow-hidden">
 
       {/* Decorative noise/grain layer */}
       <div
@@ -283,10 +281,10 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
               href="/"
               className="text-white text-[11px] font-bold tracking-wider flex items-center gap-2 hover:text-brand-warm transition-colors group"
             >
-              <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-              رجوع
+              <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+              Retour
             </Link>
-            <span dir="ltr" className="text-white text-[10px] tracking-[0.4em] uppercase font-bold">
+            <span className="text-white text-[10px] tracking-[0.4em] uppercase font-bold">
               Winners<span className="text-brand-warm">·</span>Superfrip
             </span>
           </div>
@@ -303,7 +301,6 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
             >
               <div className="flex items-end gap-5">
                 <span
-                  dir="ltr"
                   className="text-white/25 text-[120px] xl:text-[160px] leading-[0.85] font-black tracking-tighter select-none"
                   style={{ textShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
                 >
@@ -318,17 +315,17 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                     {cfg.eyebrow}
                   </p>
                   <h2
-                    className="text-white text-3xl xl:text-5xl font-black leading-[1.05] tracking-tight"
+                    className="font-display text-white text-3xl xl:text-5xl font-bold leading-[1.05] tracking-tight"
                     style={{ textShadow: '0 2px 16px rgba(0,0,0,0.6)' }}
                   >
                     {cfg.headline[0]}<br />
-                    <span className="font-light text-white/95">{cfg.headline[1]}</span>
+                    <span className="italic font-light text-white/95">{cfg.headline[1]}</span>
                   </h2>
                 </div>
               </div>
 
               <p
-                className="text-white/90 text-sm xl:text-base max-w-md leading-relaxed border-r-2 border-brand-warm pr-4"
+                className="text-white/90 text-sm xl:text-base max-w-md leading-relaxed border-l-2 border-brand-warm pl-4"
                 style={{ textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}
               >
                 {cfg.sub}
@@ -339,7 +336,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                   {PERKS.map((perk, i) => (
                     <motion.li
                       key={perk}
-                      initial={{ opacity: 0, x: 8 }}
+                      initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 + i * 0.08 }}
                       className="flex items-center gap-3 text-white text-sm"
@@ -361,7 +358,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
             className="text-white/70 text-[11px] tracking-wider"
             style={{ textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}
           >
-            تأسست 2024 · المنستير، تونس
+            Fondée en 2024 · Monastir, Tunisie
           </p>
         </div>
       </div>
@@ -372,9 +369,9 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
         {/* Mobile header */}
         <div className="lg:hidden px-6 pt-6 pb-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-black transition-colors">
-            <ArrowRight size={14} /> رجوع
+            <ArrowLeft size={14} /> Retour
           </Link>
-          <span dir="ltr" className="text-[11px] font-bold tracking-[0.25em] uppercase">
+          <span className="text-[11px] font-bold tracking-[0.25em] uppercase">
             Winners<span className="text-brand-warm">·</span>Superfrip
           </span>
         </div>
@@ -388,7 +385,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                 layout
                 transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                 className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-brand-black rounded-full"
-                style={{ right: mode === 'login' ? 4 : 'calc(50% + 0px)' }}
+                style={{ left: mode === 'login' ? 4 : 'calc(50% + 0px)' }}
               />
               {(['login', 'register'] as Mode[]).map((m) => (
                 <button
@@ -400,7 +397,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                     mode === m ? 'text-white' : 'text-gray-500 hover:text-brand-black',
                   )}
                 >
-                  {m === 'login' ? 'دخول' : 'حساب جديد'}
+                  {m === 'login' ? 'Connexion' : 'Créer un compte'}
                 </button>
               ))}
             </div>
@@ -429,11 +426,11 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                   {mode === 'login' && (
                     <div>
                       <div className="mb-7">
-                        <p className="text-[11px] tracking-wider text-brand-warm mb-2 flex items-center gap-1.5 font-bold">
-                          <Sparkles size={11} /> نحبو نشوفوك مرة أخرى
+                        <p className="text-[11px] tracking-wider text-brand-warm mb-2 flex items-center gap-1.5 font-bold uppercase">
+                          <Sparkles size={11} /> Ravis de vous revoir
                         </p>
-                        <h1 className="text-3xl font-black tracking-tight text-brand-black">
-                          تسجيل الدخول
+                        <h1 className="font-display text-3xl font-bold tracking-tight text-brand-black">
+                          Connexion
                         </h1>
                       </div>
 
@@ -443,14 +440,14 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                         className="w-full flex items-center justify-center gap-3 border border-gray-200 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-all mb-6 group"
                       >
                         <GoogleIcon />
-                        <span>كمل مع Google</span>
+                        <span>Continuer avec Google</span>
                       </button>
 
                       <Divider />
 
                       <form onSubmit={handleLoginSubmit} className="space-y-6 mt-6">
                         <FloatingField
-                          label="الإيميل"
+                          label="Email"
                           name="email"
                           type="email"
                           autoComplete="email"
@@ -459,7 +456,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                           valid={isValidEmail(loginForm.email)}
                         />
                         <FloatingField
-                          label="كلمة السر"
+                          label="Mot de passe"
                           name="password"
                           type={showPass ? 'text' : 'password'}
                           autoComplete="current-password"
@@ -471,34 +468,35 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                               onClick={() => setShowPass((s) => !s)}
                               className="hover:text-brand-black transition-colors p-0.5"
                               suppressHydrationWarning
+                              aria-label={showPass ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                             >
                               {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                             </button>
                           }
                         />
 
-                        <div className="flex justify-start -mt-2">
+                        <div className="flex justify-end -mt-2">
                           <Link
                             href="/forgot-password"
                             className="text-[11px] text-gray-400 hover:text-brand-black underline underline-offset-2 transition-colors"
                           >
-                            نسيت كلمة السر ؟
+                            Mot de passe oublié ?
                           </Link>
                         </div>
 
                         {error && <ErrorMsg message={error} />}
 
-                        <SubmitBtn loading={loading} label="دخول" loadingLabel="جاري الدخول…" />
+                        <SubmitBtn loading={loading} label="Se connecter" loadingLabel="Connexion…" />
                       </form>
 
                       <p className="text-center text-xs text-gray-500 mt-7">
-                        مازلت ما عندكش حساب ؟{' '}
+                        Pas encore de compte ?{' '}
                         <button
                           suppressHydrationWarning
                           onClick={() => switchTo('register')}
                           className="text-brand-black font-semibold hover:underline underline-offset-2"
                         >
-                          ← اعمل حساب
+                          Créer un compte →
                         </button>
                       </p>
                     </div>
@@ -508,11 +506,11 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                   {mode === 'register' && (
                     <div>
                       <div className="mb-7">
-                        <p className="text-[11px] tracking-wider text-brand-warm mb-2 flex items-center gap-1.5 font-bold">
-                          <Sparkles size={11} /> جديد هوني
+                        <p className="text-[11px] tracking-wider text-brand-warm mb-2 flex items-center gap-1.5 font-bold uppercase">
+                          <Sparkles size={11} /> Nouveau ici
                         </p>
-                        <h1 className="text-3xl font-black tracking-tight text-brand-black">
-                          اعمل حساب جديد
+                        <h1 className="font-display text-3xl font-bold tracking-tight text-brand-black">
+                          Créer un compte
                         </h1>
                       </div>
 
@@ -521,14 +519,14 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                         suppressHydrationWarning
                         className="w-full flex items-center justify-center gap-3 border border-gray-200 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-all mb-6"
                       >
-                        <GoogleIcon /> كمل مع Google
+                        <GoogleIcon /> Continuer avec Google
                       </button>
 
                       <Divider />
 
                       <form onSubmit={handleRegisterSubmit} className="space-y-5 mt-6">
                         <FloatingField
-                          label="الاسم الكامل"
+                          label="Nom complet"
                           name="name"
                           autoComplete="name"
                           value={regForm.name}
@@ -536,7 +534,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                           valid={regForm.name.trim().length > 1}
                         />
                         <FloatingField
-                          label="الإيميل"
+                          label="Email"
                           name="email"
                           type="email"
                           autoComplete="email"
@@ -546,7 +544,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                         />
                         <div className="space-y-2">
                           <FloatingField
-                            label="كلمة السر"
+                            label="Mot de passe"
                             name="password"
                             type={showPass ? 'text' : 'password'}
                             autoComplete="new-password"
@@ -558,6 +556,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                                 onClick={() => setShowPass((s) => !s)}
                                 className="hover:text-brand-black transition-colors p-0.5"
                                 suppressHydrationWarning
+                                aria-label={showPass ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                               >
                                 {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                               </button>
@@ -566,7 +565,7 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                           <PasswordStrength pw={regForm.password} />
                         </div>
                         <FloatingField
-                          label="أكد كلمة السر"
+                          label="Confirmer le mot de passe"
                           name="confirm"
                           type={showPass ? 'text' : 'password'}
                           autoComplete="new-password"
@@ -578,24 +577,23 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
                         {error && <ErrorMsg message={error} />}
 
                         <p className="text-[11px] text-gray-400 leading-relaxed pt-1">
-                          بتسجيلك انت تقبل{' '}
-                          <Link href="/terms" className="underline underline-offset-2 hover:text-brand-black">الشروط والأحكام</Link>{' '}
-                          و{' '}
-                          <Link href="/privacy" className="underline underline-offset-2 hover:text-brand-black">سياسة الخصوصية</Link>
-                          .
+                          En vous inscrivant, vous acceptez les{' '}
+                          <Link href="/terms" className="underline underline-offset-2 hover:text-brand-black">conditions générales</Link>{' '}
+                          et la{' '}
+                          <Link href="/privacy" className="underline underline-offset-2 hover:text-brand-black">politique de confidentialité</Link>.
                         </p>
 
-                        <SubmitBtn loading={loading} label="سجل حسابي" loadingLabel="جاري التسجيل…" />
+                        <SubmitBtn loading={loading} label="Créer mon compte" loadingLabel="Création…" />
                       </form>
 
                       <p className="text-center text-xs text-gray-500 mt-7">
-                        عندك حساب ؟{' '}
+                        Déjà un compte ?{' '}
                         <button
                           suppressHydrationWarning
                           onClick={() => switchTo('login')}
                           className="text-brand-black font-semibold hover:underline underline-offset-2"
                         >
-                          دخول →
+                          ← Se connecter
                         </button>
                       </p>
                     </div>
@@ -605,13 +603,13 @@ export default function AuthCard({ initialMode }: { initialMode: Mode }) {
               </AnimatePresence>
             </motion.div>
 
-            {/* Trust strip */}
+            {/* Trust strip — boutique-only model, no shipping/payment promise */}
             <div className="flex items-center justify-center gap-4 mt-6 text-[11px] tracking-wider text-gray-400">
-              <span>دفع آمن</span>
+              <span>Boutique à Monastir</span>
               <span className="w-1 h-1 rounded-full bg-gray-300" />
-              <span>توصيل 24 سا</span>
+              <span>Import Europe</span>
               <span className="w-1 h-1 rounded-full bg-gray-300" />
-              <span>إرجاع 14 يوم</span>
+              <span>Pièces uniques</span>
             </div>
           </div>
         </div>
@@ -629,7 +627,7 @@ function Divider() {
         <div className="w-full border-t border-gray-100" />
       </div>
       <div className="relative flex justify-center">
-        <span className="bg-white px-4 text-[11px] tracking-wider text-gray-400">ولا بالإيميل</span>
+        <span className="bg-white px-4 text-[11px] tracking-wider text-gray-400">ou par email</span>
       </div>
     </div>
   );
@@ -673,7 +671,7 @@ function SubmitBtn({ loading, label, loadingLabel }: { loading: boolean; label: 
       ) : (
         <>
           <span className="relative z-10">{label}</span>
-          <ArrowLeft size={14} className="relative z-10 group-hover:-translate-x-1 transition-transform" />
+          <ArrowRight size={14} className="relative z-10 group-hover:translate-x-1 transition-transform" />
         </>
       )}
     </button>

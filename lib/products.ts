@@ -1,49 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-// --- FIREBASE (à réactiver pour le déploiement) ---
-// import { db } from './firebase';
-// import { collection, getDocs, query } from 'firebase/firestore';
-// --------------------------------------------------
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
 import { products as localProducts } from '@/data/products';
 import type { Product } from '@/types';
 
+/**
+ * Public catalog hook.
+ *
+ * Source of truth is the Firestore `products` collection so the admin can add,
+ * edit and delete products and have those changes appear on the live site
+ * without a redeploy.
+ *
+ * The static seed (`data/products.ts`) is used as an instant first paint and as
+ * a fallback when Firestore is unreachable OR not seeded yet (empty). Once the
+ * admin has run "Importer catalogue" at least once, Firestore is authoritative
+ * — including deletions.
+ */
 export function useProducts() {
-  // Mode local : on utilise directement les données statiques
-  const [products] = useState<Product[]>(localProducts);
-  const loading = false;
-  const error = null;
-
-  /* --- FIREBASE FETCH (à réactiver pour le déploiement) ---
   const [products, setProducts] = useState<Product[]>(localProducts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    async function fetchProducts() {
+    let cancelled = false;
+    (async () => {
       try {
-        const productsRef = collection(db, 'products');
-        const q = query(productsRef);
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-          const firestoreProducts = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Product[];
-          setProducts(firestoreProducts);
+        const snap = await getDocs(collection(db, 'products'));
+        if (cancelled) return;
+        // Only switch to Firestore when it actually has products. An empty
+        // collection means "not seeded yet" → keep the static fallback so the
+        // site is never blank.
+        if (!snap.empty) {
+          setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product)));
         }
       } catch (err) {
-        console.error('Firestore fetch failed, using local data:', err);
-        setError(err as Error);
+        if (!cancelled) setError(err as Error);
+        // Keep the static fallback on error — the site stays browsable offline.
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    }
-
-    fetchProducts();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-  --------------------------------------------------------- */
 
   return { products, loading, error };
 }

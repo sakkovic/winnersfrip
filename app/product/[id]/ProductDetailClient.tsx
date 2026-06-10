@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Heart, ChevronDown, ChevronUp, Truck, RotateCcw, Shield } from 'lucide-react';
+import { ShoppingBag, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { cn, conditionLabel, conditionColor } from '@/lib/utils';
+import { cn, conditionLabel, conditionColor, maxCartQuantity } from '@/lib/utils';
 import ProductGallery from '@/components/ProductGallery';
 import type { Product } from '@/types';
 
@@ -40,7 +40,7 @@ const AccordionItem = ({ title, children }: { title: string; children: React.Rea
 };
 
 export default function ProductDetailClient({ product }: Props) {
-  const { addToCart } = useCart();
+  const { addToCart, cart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
 
   // Defensive fallbacks for malformed Firestore documents
@@ -52,6 +52,13 @@ export default function ProductDetailClient({ product }: Props) {
   const [selectedSize, setSelectedSize]   = useState(sizes[0] ?? '');
   const [selectedColor, setSelectedColor] = useState(colors[0] ?? '');
   const wishlisted = isWishlisted(product.id);
+
+  // Cart cap: stockQuantity from the product (1 if absent), compared against
+  // the quantity already in the cart for this exact id.
+  const stockMax     = maxCartQuantity(product.stockQuantity);
+  const inCartCount  = cart.find((i) => i.id === product.id)?.quantity ?? 0;
+  const remaining    = Math.max(0, stockMax - inCartCount);
+  const isAtMax      = remaining === 0;
 
   return (
     <>
@@ -69,11 +76,11 @@ export default function ProductDetailClient({ product }: Props) {
               <div className="flex items-center gap-3 mb-4">
                 {product.isPromo && product.promoPrice ? (
                   <>
-                    <span className="text-2xl font-bold text-red-600">{product.promoPrice}€</span>
-                    <span className="text-lg text-gray-400 line-through">{product.price}€</span>
+                    <span className="text-2xl font-bold text-red-600">{product.promoPrice} DT</span>
+                    <span className="text-lg text-gray-400 line-through">{product.price} DT</span>
                   </>
                 ) : (
-                  <span className="text-2xl font-bold">{product.price}€</span>
+                  <span className="text-2xl font-bold">{product.price} DT</span>
                 )}
                 <span className={cn('text-[10px] font-medium px-2 py-1 rounded-sm', conditionColor(product.condition))}>
                   {conditionLabel(product.condition)}
@@ -133,14 +140,42 @@ export default function ProductDetailClient({ product }: Props) {
               </div>
             )}
 
+            {/* Availability line */}
+            <div className="flex items-center gap-2 mb-4 text-[11px] tracking-wider uppercase">
+              {stockMax > 1 ? (
+                <>
+                  <span className={cn(
+                    'inline-block w-1.5 h-1.5 rounded-full',
+                    isAtMax ? 'bg-amber-500' : 'bg-emerald-500',
+                  )} />
+                  <span className="text-gray-600 font-medium">
+                    {isAtMax
+                      ? `Limite atteinte — ${stockMax} dans le panier`
+                      : `${remaining} disponible${remaining !== 1 ? 's' : ''}`}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className={cn(
+                    'inline-block w-1.5 h-1.5 rounded-full',
+                    isAtMax ? 'bg-amber-500' : 'bg-brand-warm',
+                  )} />
+                  <span className="text-gray-600 font-medium">
+                    {isAtMax ? 'Déjà dans le panier' : 'Pièce unique'}
+                  </span>
+                </>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="flex gap-3 mb-8">
               <button
                 onClick={() => addToCart(product, selectedSize, selectedColor)}
-                className="flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold tracking-widest uppercase transition-colors bg-brand-black text-white hover:bg-gray-800"
+                disabled={isAtMax}
+                className="flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold tracking-widest uppercase transition-colors bg-brand-black text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <ShoppingBag size={16} strokeWidth={1.5} />
-                Ajouter au panier
+                {isAtMax ? 'Limite atteinte' : 'Ajouter au panier'}
               </button>
               <button
                 onClick={() => toggleWishlist(product)}
@@ -156,35 +191,10 @@ export default function ProductDetailClient({ product }: Props) {
               </button>
             </div>
 
-            {/* Shipping info */}
-            <div className="border border-gray-100 p-4 space-y-3 mb-6">
-              {[
-                { icon: Truck, text: 'Livraison rapide 24-48h' },
-                { icon: RotateCcw, text: 'Retour gratuit sous 14 jours' },
-                { icon: Shield, text: 'Paiement 100% sécurisé' },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-3 text-xs text-gray-500">
-                  <Icon size={14} strokeWidth={1.5} className="flex-shrink-0 text-gray-400" />
-                  {text}
-                </div>
-              ))}
-            </div>
-
-            {/* Accordion */}
+            {/* Accordion — kept minimal: description only */}
             <div>
               <AccordionItem title="Description">
                 <p>{product.description}</p>
-              </AccordionItem>
-              {product.material && (
-                <AccordionItem title="Composition & Entretien">
-                  <p>{product.material}</p>
-                </AccordionItem>
-              )}
-              <AccordionItem title="Livraison & Retours">
-                <p>Commandez avant 15h pour une expédition le jour même. Livraison en 24 à 48h ouvrées. Retour gratuit sous 14 jours pour tout article non porté.</p>
-              </AccordionItem>
-              <AccordionItem title="Guide des Tailles">
-                <p>En cas de doute entre deux tailles, nous recommandons de prendre la taille supérieure. Nos articles vintage peuvent avoir des coupes différentes des standards actuels.</p>
               </AccordionItem>
             </div>
           </div>
@@ -195,10 +205,11 @@ export default function ProductDetailClient({ product }: Props) {
       <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-100 p-4 flex gap-3 z-40">
         <button
           onClick={() => addToCart(product, selectedSize, selectedColor)}
-          className="flex-1 bg-brand-black text-white text-xs font-bold tracking-widest uppercase py-3.5 flex items-center justify-center gap-2"
+          disabled={isAtMax}
+          className="flex-1 bg-brand-black text-white text-xs font-bold tracking-widest uppercase py-3.5 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           <ShoppingBag size={14} />
-          Ajouter — {product.price}€
+          {isAtMax ? 'Limite atteinte' : `Ajouter — ${product.price} DT`}
         </button>
       </div>
     </>

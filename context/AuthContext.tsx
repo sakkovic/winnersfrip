@@ -1,13 +1,21 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail,
+  updateProfile,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
-// ============================================================
-// MODE LOCAL — Firebase Auth est désactivé temporairement.
-// Pour réactiver pour le déploiement :
-// 1. Supprimez le bloc "Stub local" ci-dessous
-// 2. Décommentez le bloc "FIREBASE AUTH COMPLET" en bas
-// ============================================================
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface AuthUser {
   uid: string;
@@ -36,37 +44,9 @@ export function useAuth() {
   return ctx;
 }
 
-// --- Stub local : aucun utilisateur connecté ---
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const value: AuthContextValue = {
-    currentUser: null,
-    loading: false,
-    login: async () => {},
-    signup: async () => {},
-    loginWithGoogle: async () => {},
-    logout: async () => {},
-    resetPassword: async () => {},
-    isAdmin: false,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-/* --- FIREBASE AUTH COMPLET (à réactiver pour le déploiement) ---
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  sendPasswordResetEmail,
-  type User as FirebaseUser,
-} from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+// ── Role resolution ──────────────────────────────────────────────────────────
+// The admin email is treated as the sole owner. Any other user is "client".
+// Firestore can later override a user's role via /users/{uid}.role.
 
 const ADMIN_EMAIL = 'anis.federe@gmail.com';
 
@@ -74,8 +54,10 @@ async function resolveRole(user: FirebaseUser): Promise<'admin' | 'client'> {
   if (user.email === ADMIN_EMAIL) return 'admin';
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
-    if (snap.exists()) return snap.data().role ?? 'client';
-  } catch {}
+    if (snap.exists()) return (snap.data().role as 'admin' | 'client') ?? 'client';
+  } catch {
+    /* Firestore not reachable — fall through to client */
+  }
   return 'client';
 }
 
@@ -91,8 +73,12 @@ async function ensureUserDoc(user: FirebaseUser, role: 'admin' | 'client') {
         createdAt: new Date(),
       });
     }
-  } catch {}
+  } catch {
+    /* Soft fail — user doc is non-critical for login */
+  }
 }
+
+// ── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -103,7 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         const role = await resolveRole(user);
         await ensureUserDoc(user, role);
-        setCurrentUser({ uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL, role });
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          role,
+        });
       } else {
         setCurrentUser(null);
       }
@@ -118,22 +110,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (email: string, password: string, name: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
+    if (name) await updateProfile(user, { displayName: name });
     const role: 'admin' | 'client' = email === ADMIN_EMAIL ? 'admin' : 'client';
-    await setDoc(doc(db, 'users', user.uid), { name, email, role, createdAt: new Date() });
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        name,
+        email,
+        role,
+        createdAt: new Date(),
+      });
+    } catch {
+      /* Soft fail */
+    }
   };
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     await signInWithPopup(auth, provider);
   };
 
   const logout = async () => signOut(auth);
   const resetPassword = async (email: string) => sendPasswordResetEmail(auth, email);
 
+  const value: AuthContextValue = {
+    currentUser,
+    loading,
+    login,
+    signup,
+    loginWithGoogle,
+    logout,
+    resetPassword,
+    isAdmin: currentUser?.role === 'admin',
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, signup, loginWithGoogle, logout, resetPassword, isAdmin: currentUser?.role === 'admin' }}>
-      {!loading && children}
+    <AuthContext.Provider value={value}>
+      {/* Render children even while auth is loading; consumers gate as needed. */}
+      {children}
     </AuthContext.Provider>
   );
 }
----------------------------------------------------------------- */

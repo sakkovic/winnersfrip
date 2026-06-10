@@ -4,6 +4,9 @@
 
 :root {
   --font-inter: 'Inter', sans-serif;
+  --gold-soft: #C9954A;
+  --gold: #845300;
+  --gold-dark: #5C3A00;
 }
 
 * {
@@ -38,19 +41,183 @@ body {
 ::-webkit-scrollbar-thumb {
   @apply bg-gray-300 rounded-none;
 }
-
-/* Scrollbar thumb goes gold on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #845300; /* brand-gold */
+  background-color: #845300;
 }
 
 /* Text selection — warm gold background */
 ::selection {
-  background-color: #C9954A; /* brand-gold-soft — lisible sur fond clair */
+  background-color: #C9954A;
   color: #0A0A0A;
 }
 
-/* Utility: gold focus ring (use class="brand-focus" on a wrapper) */
+/* Utility: gold focus ring */
 .brand-focus :focus-visible {
   @apply outline-none ring-1 ring-brand-gold ring-offset-1;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Modern utility layer
+   ───────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  /* Gold gradient text — used for editorial accents */
+  .text-gold-gradient {
+    background-image: linear-gradient(120deg, #5C3A00 0%, #845300 25%, #C9954A 50%, #845300 75%, #5C3A00 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .text-gold-shimmer {
+    background-image: linear-gradient(120deg, #5C3A00 0%, #845300 25%, #C9954A 50%, #845300 75%, #5C3A00 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: gold-sweep 5s linear infinite;
+  }
+
+  /* Hairline gold divider */
+  .gold-divider {
+    background-image: linear-gradient(90deg, transparent 0%, #C9954A 50%, transparent 100%);
+    height: 1px;
+  }
+
+  /* Glassmorphism surfaces */
+  .glass-light {
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid rgba(10, 10, 10, 0.06);
+  }
+  .glass-dark {
+    background-color: rgba(10, 10, 10, 0.55);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+  }
+
+  /* Animated underline (for nav links) */
+  .link-underline {
+    position: relative;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-underline:hover::after,
+  .link-underline[data-active='true']::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  /* Gold animated underline variant */
+  .link-underline-gold::after {
+    background: linear-gradient(90deg, #5C3A00, #C9954A, #5C3A00);
+  }
+
+  /* Lift on hover for cards */
+  .hover-lift {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .hover-lift:hover {
+    transform: translate3d(0, -4px, 0);
+    box-shadow: 0 18px 38px -22px rgba(10, 10, 10, 0.35);
+  }
+
+  /* Subtle film-grain noise overlay (uses inline svg) */
+  .noise-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Conic gold ring used for value icons */
+  .gold-ring {
+    background: conic-gradient(from 140deg, #5C3A00, #C9954A, #845300, #5C3A00);
+    padding: 1px;
+    border-radius: 9999px;
+  }
+
+  /* Mesh background for newsletter / hero accents */
+  .bg-mesh-cream {
+    background:
+      radial-gradient(800px 400px at 10% 0%, rgba(201, 149, 74, 0.18), transparent 60%),
+      radial-gradient(700px 500px at 95% 100%, rgba(132, 83, 0, 0.12), transparent 60%),
+      #FAF7F0;
+  }
+  .bg-mesh-dark {
+    background:
+      radial-gradient(900px 500px at 0% 0%, rgba(201, 149, 74, 0.18), transparent 60%),
+      radial-gradient(700px 400px at 100% 100%, rgba(132, 83, 0, 0.15), transparent 60%),
+      #0A0A0A;
+  }
+
+  /* Shimmer placeholder (for image loading) */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.04) 0%,
+      rgba(0, 0, 0, 0.08) 40%,
+      rgba(0, 0, 0, 0.04) 80%);
+    background-size: 200% 100%;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  /* Reveal helper used by IntersectionObserver-driven components */
+  .reveal-mask {
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal-mask.is-visible {
+    clip-path: inset(0 0 0 0);
+  }
+
+  /* Smooth tabular numerals for prices */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Auth fields — neutralise Chrome / Edge autofill styling so the
+   floating label doesn't overlap the autofilled value.
+   ───────────────────────────────────────────────────────────── */
+.auth-field:-webkit-autofill,
+.auth-field:-webkit-autofill:hover,
+.auth-field:-webkit-autofill:focus,
+.auth-field:-webkit-autofill:active {
+  -webkit-text-fill-color: #0A0A0A;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  caret-color: #0A0A0A;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Reduced motion — disable non-essential motion
+   ───────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

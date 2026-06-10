@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import {
   Plus, Pencil, Trash2, X, Check, Shield, Package,
-  Eye, EyeOff, Star, Loader2, Search, RefreshCw,
+  Star, Loader2, Search, RefreshCw,
   ExternalLink, Sparkles, Tag, AlertCircle, Upload, ImageIcon,
+  Database,
 } from 'lucide-react';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
+  setDoc, writeBatch,
 } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -21,6 +24,7 @@ import {
   CATEGORIES, CONDITIONS, GENDERS, STYLES, ORIGINS,
   COLORS, CLOTHING_SIZES, SHOE_SIZES, CONDITION_LABELS,
 } from '@/lib/constants';
+import { products as catalogProducts } from '@/data/products';
 import type { Product, ProductCategory } from '@/types';
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
@@ -37,12 +41,13 @@ function slugify(text: string) {
 type FormData = Omit<Product, 'id' | 'slug'>;
 
 const EMPTY_FORM: FormData = {
-  name: '', category: 'hauts', gender: 'unisexe',
-  price: 0, promoPrice: undefined, isPromo: false, currency: '€',
+  name: '', department: 'mode', category: 'hauts', gender: 'unisexe',
+  price: 0, promoPrice: undefined, isPromo: false, currency: 'DT',
   images: [], colors: [], sizes: [],
   condition: 'seconde_main', origin: 'europe', style: 'streetwear',
-  description: '', material: '',
-  isNewArrival: false, isFeatured: false, inStock: true,
+  description: '', material: '', brand: '', volume: '',
+  isNewArrival: false, isFeatured: false,
+  stockQuantity: 1,
 };
 
 // ─── Reusable UI atoms ────────────────────────────────────────────────────────
@@ -306,11 +311,24 @@ interface ProductFormProps {
 }
 
 function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
+  const initialSnapshot = useRef<FormData>({ ...EMPTY_FORM, ...initial });
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM, ...initial });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
   const set = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialSnapshot.current);
+
+  const requestClose = () => {
+    if (isDirty) {
+      const ok = window.confirm(
+        'Vous avez des modifications non enregistrées. Fermer quand même ?',
+      );
+      if (!ok) return;
+    }
+    onClose();
+  };
 
   const validate = (): boolean => {
     const e: typeof errors = {};
@@ -319,6 +337,16 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
     if (form.images.length === 0)  e.images = 'Au moins une image requise';
     if (!form.description.trim())  e.description = 'Description requise';
     if (form.sizes.length === 0)   e.sizes = 'Au moins une taille requise';
+    if (form.isPromo && !form.promoPrice) {
+      e.promoPrice = 'Renseignez le prix promotionnel';
+    }
+    if (
+      form.isPromo &&
+      form.promoPrice !== undefined &&
+      form.promoPrice >= form.price
+    ) {
+      e.promoPrice = 'Le prix promo doit être inférieur au prix normal';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -349,8 +377,11 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <h2 className="text-sm font-bold tracking-widest uppercase">
             {initial?.id ? 'Modifier le produit' : 'Ajouter un produit'}
+            {isDirty && (
+              <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-brand-warm align-middle" title="Modifications non enregistrées" />
+            )}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-brand-black transition-colors p-1">
+          <button onClick={requestClose} className="text-gray-400 hover:text-brand-black transition-colors p-1" aria-label="Fermer">
             <X size={18} />
           </button>
         </div>
@@ -414,7 +445,7 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <FieldLabel required>Prix normal (€)</FieldLabel>
+                    <FieldLabel required>Prix normal (DT)</FieldLabel>
                     <input
                       className={cn(inputCls, errors.price && 'border-red-300')}
                       type="number"
@@ -427,9 +458,9 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
                     <ErrMsg field="price" />
                   </div>
                   <div>
-                    <FieldLabel>Prix promotionnel (€)</FieldLabel>
+                    <FieldLabel>Prix promotionnel (DT)</FieldLabel>
                     <input
-                      className={inputCls}
+                      className={cn(inputCls, errors.promoPrice && 'border-red-300')}
                       type="number"
                       min={0}
                       step="0.01"
@@ -437,6 +468,7 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
                       onChange={(e) => set('promoPrice', e.target.value ? Number(e.target.value) : undefined)}
                       placeholder="Optionnel"
                     />
+                    <ErrMsg field="promoPrice" />
                   </div>
                 </div>
                 <Toggle
@@ -445,11 +477,31 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
                   label="Activer la promotion"
                   accent="red"
                 />
-                {form.isPromo && !form.promoPrice && (
+                {form.isPromo && !form.promoPrice && !errors.promoPrice && (
                   <p className="text-[10px] text-amber-600 flex items-center gap-1">
                     <AlertCircle size={10} /> Renseignez un prix promotionnel ci-dessus.
                   </p>
                 )}
+
+                <div>
+                  <FieldLabel>Quantité en stock</FieldLabel>
+                  <input
+                    className={cn(inputCls, 'max-w-[140px]')}
+                    type="number"
+                    min={1}
+                    step="1"
+                    value={form.stockQuantity ?? 1}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      set('stockQuantity', Number.isFinite(n) && n >= 1 ? n : 1);
+                    }}
+                    placeholder="1"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1.5">
+                    Nombre d&apos;exemplaires disponibles à la boutique. Laisser à 1 pour
+                    une pièce unique (vintage, seconde main…).
+                  </p>
+                </div>
               </div>
             </FormSection>
 
@@ -505,8 +557,7 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
 
             {/* Options */}
             <FormSection title="Options & Visibilité">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <Toggle checked={!!form.inStock}      onChange={() => set('inStock', !form.inStock)}           label="En stock" />
+              <div className="grid grid-cols-2 gap-3">
                 <Toggle checked={!!form.isNewArrival} onChange={() => set('isNewArrival', !form.isNewArrival)} label="Nouvelle arrivée" />
                 <Toggle checked={!!form.isFeatured}   onChange={() => set('isFeatured', !form.isFeatured)}     label="En vedette" />
               </div>
@@ -517,7 +568,7 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
           <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="flex-1 border border-gray-200 bg-white text-xs font-bold tracking-widest uppercase py-3 hover:bg-gray-50 transition-colors"
             >
               Annuler
@@ -567,24 +618,31 @@ export default function AdminPage() {
   const [fetching, setFetching]     = useState(true);
   const [search, setSearch]         = useState('');
   const [catFilter, setCatFilter]   = useState<ProductCategory | 'all'>('all');
-  const [statusFilter, setStatus]   = useState<'all' | 'inStock' | 'outOfStock' | 'promo' | 'new'>('all');
+  const [statusFilter, setStatus]   = useState<'all' | 'promo' | 'new' | 'featured'>('all');
   const [formOpen, setFormOpen]     = useState(false);
   const [editTarget, setEditTarget] = useState<(Partial<FormData> & { id?: string }) | null>(null);
   const [saving, setSaving]         = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting]     = useState<string | null>(null);
+  const [seeding, setSeeding]       = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!currentUser || !isAdmin)) router.push('/login');
   }, [currentUser, isAdmin, authLoading, router]);
 
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const fetchProducts = useCallback(async () => {
     setFetching(true);
+    setFetchError(null);
     try {
       const snap = await getDocs(collection(db, 'products'));
       setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product & { id: string })));
     } catch (err) {
-      console.error(err);
+      console.error('fetchProducts failed', err);
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setFetchError(msg);
+      toast.error('Impossible de charger les produits.');
     } finally {
       setFetching(false);
     }
@@ -598,25 +656,71 @@ export default function AdminPage() {
       const payload = { ...data, slug: slugify(data.name), updatedAt: serverTimestamp() };
       if (id) {
         await updateDoc(doc(db, 'products', id), payload);
+        toast.success('Produit mis à jour.');
       } else {
         await addDoc(collection(db, 'products'), { ...payload, createdAt: serverTimestamp() });
+        toast.success('Produit ajouté.');
       }
       await fetchProducts();
       setFormOpen(false);
       setEditTarget(null);
     } catch (err) {
-      console.error(err);
+      console.error('handleSave failed', err);
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      // Surface the actual cause — most often "Missing or insufficient
+      // permissions" from a misconfigured rules deploy.
+      toast.error(`Échec de l'enregistrement: ${msg}`);
     } finally {
       setSaving(false);
     }
   };
 
   const handleToggle = async (id: string, key: keyof Product, value: unknown) => {
+    // Optimistic update — snapshot the previous value so we can rollback on failure.
+    const previous = products.find((p) => p.id === id)?.[key];
+    setProducts((p) => p.map((x) => (x.id === id ? { ...x, [key]: value } : x)));
     try {
       await updateDoc(doc(db, 'products', id), { [key]: value });
-      setProducts((p) => p.map((x) => (x.id === id ? { ...x, [key]: value } : x)));
+    } catch (err) {
+      console.error('handleToggle failed', err);
+      // Rollback the optimistic update so the UI reflects server state.
+      setProducts((p) => p.map((x) => (x.id === id ? { ...x, [key]: previous } : x)));
+      toast.error('Modification refusée par le serveur.');
+    }
+  };
+
+  const handleSeedCatalog = async () => {
+    if (seeding) return;
+    const ok = window.confirm(
+      `Importer ${catalogProducts.length} produits depuis le catalogue local vers Firestore ?\n\nLes produits existants (même ID) seront écrasés.`,
+    );
+    if (!ok) return;
+
+    setSeeding(true);
+    try {
+      // Firestore batches max 500 writes; chunk just in case.
+      const chunkSize = 400;
+      let written = 0;
+      for (let i = 0; i < catalogProducts.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        for (const p of catalogProducts.slice(i, i + chunkSize)) {
+          const { id, ...rest } = p;
+          batch.set(doc(db, 'products', id), {
+            ...rest,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+        await batch.commit();
+        written += Math.min(chunkSize, catalogProducts.length - i);
+      }
+      toast.success(`${written} produits importés.`);
+      await fetchProducts();
     } catch (err) {
       console.error(err);
+      toast.error('Échec de l\'import. Voir la console.');
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -626,8 +730,11 @@ export default function AdminPage() {
       await deleteDoc(doc(db, 'products', id));
       setProducts((p) => p.filter((x) => x.id !== id));
       setConfirmDelete(null);
+      toast.success('Produit supprimé.');
     } catch (err) {
-      console.error(err);
+      console.error('handleDelete failed', err);
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      toast.error(`Suppression refusée: ${msg}`);
     } finally {
       setDeleting(null);
     }
@@ -644,18 +751,25 @@ export default function AdminPage() {
   // Filtering
   const displayed = products.filter((p) => {
     if (catFilter !== 'all' && p.category !== catFilter) return false;
-    if (statusFilter === 'inStock'    && !p.inStock)     return false;
-    if (statusFilter === 'outOfStock' && p.inStock)      return false;
     if (statusFilter === 'promo'      && !p.isPromo)     return false;
     if (statusFilter === 'new'        && !p.isNewArrival)return false;
-    if (search && !p.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (statusFilter === 'featured'   && !p.isFeatured)  return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const haystack = [
+        p.name,
+        p.brand,
+        p.category,
+        p.description,
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     return true;
   });
 
   // Stats
   const stats = {
     total:    products.length,
-    inStock:  products.filter((p) => p.inStock).length,
     new:      products.filter((p) => p.isNewArrival).length,
     featured: products.filter((p) => p.isFeatured).length,
     promo:    products.filter((p) => p.isPromo).length,
@@ -664,17 +778,38 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Sticky top bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-16 z-30">
+      {/* Sticky top bar — sits flush under the global navbar (28 px announcement + 64 px nav) */}
+      <div className="bg-white border-b border-gray-100 sticky top-[92px] z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Shield size={16} strokeWidth={1.5} className="text-brand-black" />
             <h1 className="text-xs font-bold tracking-widest uppercase">Administration</h1>
             <span className="text-xs text-gray-400 hidden sm:inline">— {products.length} produit{products.length !== 1 ? 's' : ''}</span>
+            <Link
+              href="/admin/reservations"
+              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors hidden sm:inline-flex items-center gap-1.5"
+            >
+              <span>Réservations</span>
+              <span className="text-gray-300">→</span>
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={fetchProducts} title="Actualiser" className="p-2 text-gray-400 hover:text-brand-black transition-colors">
               <RefreshCw size={14} className={fetching ? 'animate-spin' : ''} />
+            </button>
+            <button
+              onClick={handleSeedCatalog}
+              disabled={seeding}
+              title={`Importer ${catalogProducts.length} produits du catalogue local vers Firestore`}
+              className={cn(
+                'flex items-center gap-1.5 border text-[11px] font-bold tracking-widest uppercase px-3 py-2 transition-colors',
+                seeding
+                  ? 'border-gray-200 text-gray-300 cursor-wait'
+                  : 'border-brand-gold-soft text-brand-warm hover:bg-brand-cream',
+              )}
+            >
+              {seeding ? <Loader2 size={13} className="animate-spin" /> : <Database size={13} />}
+              <span className="hidden sm:inline">{seeding ? 'Import…' : 'Importer catalogue'}</span>
             </button>
             <button
               onClick={() => { setEditTarget(null); setFormOpen(true); }}
@@ -690,22 +825,35 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {/* Stats strip — clickable to filter */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {([
-            { key: 'total',    label: 'Total',      color: 'bg-gray-900 text-white' },
-            { key: 'inStock',  label: 'En stock',   color: 'bg-emerald-600 text-white' },
-            { key: 'new',      label: 'Nouveautés', color: 'bg-blue-600 text-white' },
-            { key: 'featured', label: 'En vedette', color: 'bg-purple-600 text-white' },
-            { key: 'promo',    label: 'Promos',     color: 'bg-red-600 text-white' },
-          ] as const).map((s) => (
-            <div key={s.key} className="bg-white p-4 flex items-center gap-3 border border-gray-100">
-              <span className={cn('text-xs font-bold w-8 h-8 flex items-center justify-center flex-shrink-0', s.color)}>
-                {stats[s.key]}
-              </span>
-              <span className="text-[11px] text-gray-500 font-medium">{s.label}</span>
-            </div>
-          ))}
+            { key: 'total',    label: 'Total',      color: 'bg-gray-900 text-white',    filter: 'all'      as const },
+            { key: 'new',      label: 'Nouveautés', color: 'bg-blue-600 text-white',    filter: 'new'      as const },
+            { key: 'featured', label: 'En vedette', color: 'bg-purple-600 text-white',  filter: 'featured' as const },
+            { key: 'promo',    label: 'Promos',     color: 'bg-red-600 text-white',     filter: 'promo'    as const },
+          ] as const).map((s) => {
+            const active = statusFilter === s.filter;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setStatus(s.filter)}
+                aria-pressed={active}
+                className={cn(
+                  'bg-white p-4 flex items-center gap-3 border text-left transition-all',
+                  active
+                    ? 'border-brand-black shadow-sm'
+                    : 'border-gray-100 hover:border-gray-300',
+                )}
+              >
+                <span className={cn('text-xs font-bold w-8 h-8 flex items-center justify-center flex-shrink-0', s.color)}>
+                  {stats[s.key]}
+                </span>
+                <span className="text-[11px] text-gray-500 font-medium">{s.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Filters row */}
@@ -747,10 +895,9 @@ export default function AdminPage() {
             className="border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-brand-black transition-colors cursor-pointer"
           >
             <option value="all">Tous les statuts</option>
-            <option value="inStock">En stock</option>
-            <option value="outOfStock">Hors stock</option>
             <option value="promo">En promo</option>
             <option value="new">Nouveautés</option>
+            <option value="featured">En vedette</option>
           </select>
 
           {displayed.length !== products.length && (
@@ -758,8 +905,10 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Table */}
-        <div className="bg-white border border-gray-100 overflow-hidden">
+        {/* Table — horizontally scrollable on small screens so the fixed-width
+            grid columns stay readable instead of overlapping. */}
+        <div className="bg-white border border-gray-100 overflow-x-auto">
+          <div className="min-w-[680px]">
           {/* Header */}
           <div className="grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
             {['', 'Produit', 'Prix', 'Statuts', 'Actions'].map((h) => (
@@ -768,17 +917,66 @@ export default function AdminPage() {
           </div>
 
           {fetching ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 size={22} className="animate-spin text-gray-200" />
+            <div>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 items-center px-4 py-3 border-b border-gray-50 last:border-b-0 animate-pulse"
+                >
+                  <div className="w-12 h-14 bg-gray-100" />
+                  <div className="space-y-2">
+                    <div className="h-3 bg-gray-100 w-2/3" />
+                    <div className="h-2 bg-gray-100 w-1/3" />
+                  </div>
+                  <div className="h-3 bg-gray-100 w-10 ml-auto" />
+                  <div className="h-4 bg-gray-100 w-16" />
+                  <div className="h-4 bg-gray-100 w-20 ml-auto" />
+                </div>
+              ))}
+            </div>
+          ) : fetchError ? (
+            <div className="text-center py-16 px-6">
+              <AlertCircle size={32} strokeWidth={1} className="text-red-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-700 font-medium mb-1">
+                Impossible de charger les produits
+              </p>
+              <p className="text-xs text-gray-400 mb-5 max-w-md mx-auto break-words">
+                {fetchError}
+              </p>
+              <button
+                onClick={fetchProducts}
+                className="inline-flex items-center gap-2 border border-gray-200 px-4 py-2 text-xs font-bold tracking-widest uppercase hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw size={12} /> Réessayer
+              </button>
             </div>
           ) : displayed.length === 0 ? (
             <div className="text-center py-16">
               <Package size={36} strokeWidth={0.8} className="text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-5">
                 {products.length === 0
                   ? 'Aucun produit dans Firestore. Ajoutez le premier.'
-                  : 'Aucun produit correspond aux filtres.'}
+                  : 'Aucun produit ne correspond aux filtres.'}
               </p>
+              {products.length === 0 ? (
+                <button
+                  onClick={() => { setEditTarget(null); setFormOpen(true); }}
+                  className="inline-flex items-center gap-2 bg-brand-black text-white text-xs font-bold tracking-widest uppercase px-5 py-2.5 hover:bg-gray-800 transition-colors"
+                >
+                  <Plus size={12} /> Ajouter un produit
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setCatFilter('all');
+                    setStatus('all');
+                  }}
+                  className="inline-flex items-center gap-2 border border-gray-200 px-4 py-2 text-xs font-bold tracking-widest uppercase hover:bg-gray-50 transition-colors"
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
             </div>
           ) : (
             <AnimatePresence initial={false}>
@@ -790,10 +988,7 @@ export default function AdminPage() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
                   transition={{ duration: 0.15 }}
-                  className={cn(
-                    'grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors',
-                    !p.inStock && 'opacity-60',
-                  )}
+                  className="grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
                 >
                   {/* Thumb */}
                   <div className="w-12 h-14 bg-gray-100 overflow-hidden relative flex-shrink-0">
@@ -811,6 +1006,13 @@ export default function AdminPage() {
                     <p className="text-sm font-medium truncate">{p.name}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 font-medium capitalize">{p.category}</span>
+                      {(p.stockQuantity ?? 1) > 1 ? (
+                        <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium tabular-nums">
+                          ×{p.stockQuantity}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-gray-400">×1</span>
+                      )}
                       <span className="text-[10px] text-gray-400 capitalize">{p.gender}</span>
                       <span className="text-[10px] text-gray-400 capitalize hidden sm:inline">· {p.style}</span>
                       <span className="text-[10px] text-gray-400 capitalize hidden sm:inline">· {CONDITION_LABELS[p.condition] ?? p.condition}</span>
@@ -821,23 +1023,16 @@ export default function AdminPage() {
                   <div className="text-right">
                     {p.isPromo && p.promoPrice ? (
                       <>
-                        <p className="text-sm font-bold text-red-600">{p.promoPrice}€</p>
-                        <p className="text-[10px] text-gray-400 line-through">{p.price}€</p>
+                        <p className="text-sm font-bold text-red-600">{p.promoPrice} DT</p>
+                        <p className="text-[10px] text-gray-400 line-through">{p.price} DT</p>
                       </>
                     ) : (
-                      <p className="text-sm font-bold">{p.price}€</p>
+                      <p className="text-sm font-bold">{p.price} DT</p>
                     )}
                   </div>
 
                   {/* Toggles */}
                   <div className="flex items-center gap-0.5">
-                    <ToggleBtn
-                      active={!!p.inStock}
-                      onClick={() => handleToggle(p.id, 'inStock', !p.inStock)}
-                      title={p.inStock ? 'En stock — cliquer pour désactiver' : 'Hors stock — cliquer pour activer'}
-                      activeColor="text-emerald-600 bg-emerald-50"
-                      icon={p.inStock ? Eye : EyeOff}
-                    />
                     <ToggleBtn
                       active={!!p.isNewArrival}
                       onClick={() => handleToggle(p.id, 'isNewArrival', !p.isNewArrival)}
@@ -878,34 +1073,19 @@ export default function AdminPage() {
                     >
                       <Pencil size={13} />
                     </button>
-                    {confirmDelete === p.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          disabled={deleting === p.id}
-                          className="p-1.5 bg-red-600 text-white hover:bg-red-700 transition-colors"
-                          title="Confirmer la suppression"
-                        >
-                          {deleting === p.id ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-                        </button>
-                        <button onClick={() => setConfirmDelete(null)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Annuler">
-                          <X size={11} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDelete(p.id)}
-                        className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setConfirmDelete(p.id)}
+                      className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
           )}
+          </div>
         </div>
 
         {/* Firestore empty note */}
@@ -930,6 +1110,85 @@ export default function AdminPage() {
             saving={saving}
           />
         )}
+      </AnimatePresence>
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {confirmDelete && (() => {
+          const target = products.find((p) => p.id === confirmDelete);
+          if (!target) return null;
+          const isDeleting = deleting === target.id;
+          return (
+            <div
+              className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4"
+              onClick={() => !isDeleting && setConfirmDelete(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-modal-title"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 30 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full sm:max-w-md flex flex-col"
+              >
+                <div className="px-6 py-5 border-b border-gray-100 flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                    <Trash2 size={18} className="text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 id="delete-modal-title" className="text-sm font-bold tracking-widest uppercase text-brand-black">
+                      Supprimer ce produit ?
+                    </h2>
+                    <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                      Cette action est définitive et ne peut pas être annulée.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 flex items-center gap-3 border-b border-gray-100">
+                  <div className="relative w-14 h-16 bg-gray-100 overflow-hidden flex-shrink-0">
+                    {target.images?.[0] ? (
+                      <Image src={target.images[0]} alt={target.name ?? ''} fill className="object-cover" sizes="56px" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package size={14} className="text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{target.name}</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider mt-0.5">
+                      ID: {target.id} · {target.price} DT
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 px-6 py-4 bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(null)}
+                    disabled={isDeleting}
+                    className="flex-1 border border-gray-200 bg-white text-xs font-bold tracking-widest uppercase py-3 hover:bg-gray-50 transition-colors disabled:opacity-60"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(target.id)}
+                    disabled={isDeleting}
+                    className="flex-1 bg-red-600 text-white text-xs font-bold tracking-widest uppercase py-3 hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {isDeleting && <Loader2 size={13} className="animate-spin" />}
+                    {isDeleting ? 'Suppression…' : 'Supprimer'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );

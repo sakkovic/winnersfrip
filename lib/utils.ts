@@ -5,8 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPrice(price: number, currency = '€'): string {
-  return `${price}${currency}`;
+/** Boutique currency — Tunisian Dinar. Change here to switch site-wide. */
+export const CURRENCY = 'DT';
+
+export function formatPrice(price: number, currency = CURRENCY): string {
+  return `${price} ${currency}`;
 }
 
 export function slugify(text: string): string {
@@ -33,4 +36,14 @@ export function conditionColor(condition: string): string {
     seconde_main: 'bg-amber-100 text-amber-800',
   };
   return map[condition] ?? 'bg-gray-100 text-gray-800';
+}
+
+/**
+ * Returns the maximum number of units a single product can be added to the cart.
+ * Treats `undefined` and any value < 1 as a singleton (1 unit), so legacy
+ * catalog entries without an explicit stockQuantity behave correctly.
+ */
+export function maxCartQuantity(stockQuantity: number | undefined): number {
+  if (typeof stockQuantity !== 'number' || !Number.isFinite(stockQuantity)) return 1;
+  return Math.max(1, Math.floor(stockQuantity));
 }

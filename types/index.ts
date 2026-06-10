@@ -2,12 +2,22 @@ export type ProductCondition = 'neuf' | 'comme_neuf' | 'seconde_main';
 export type ProductOrigin = 'europe' | 'local';
 export type ProductGender = 'homme' | 'femme' | 'unisexe';
 export type ProductStyle = 'streetwear' | 'vintage' | 'sport' | 'chic' | 'y2k' | 'minimaliste';
-export type ProductCategory = 'hauts' | 'bas' | 'robes' | 'vestes' | 'chaussures' | 'accessoires';
+
+export type ProductDepartment = 'mode' | 'beaute';
+
+export type ModeCategory =
+  | 'hauts' | 'bas' | 'robes' | 'vestes' | 'chaussures' | 'accessoires';
+
+export type BeauteCategory =
+  | 'parfums' | 'soins-visage' | 'soins-corps' | 'cheveux' | 'maquillage';
+
+export type ProductCategory = ModeCategory | BeauteCategory;
 
 export interface Product {
   id: string;
   name: string;
   slug: string;
+  department: ProductDepartment;
   category: ProductCategory;
   gender: ProductGender;
   price: number;
@@ -22,9 +32,24 @@ export interface Product {
   style: ProductStyle;
   description: string;
   material?: string;
+  /** Brand name (used mainly for beauty / branded fashion items). */
+  brand?: string;
+  /** Volume (e.g. "50ml", "200ml") for beauty products. */
+  volume?: string;
   isNewArrival?: boolean;
   isFeatured?: boolean;
-  inStock: boolean;
+  /**
+   * Legacy boolean kept for backwards-compatibility with older data only.
+   * Real availability is tracked via {@link Product.stockQuantity}.
+   */
+  inStock?: boolean;
+  /**
+   * Number of physical units the boutique has of this exact reference.
+   * - undefined or 1 → singleton (most vintage / one-off pieces)
+   * - N > 1          → multi-unit, cart can hold up to N copies
+   * The cart adds/quantity-update logic enforces this cap.
+   */
+  stockQuantity?: number;
 }
 
 export interface CartItem extends Product {
@@ -63,6 +88,7 @@ export interface ShippingAddress {
 }
 
 export interface FilterState {
+  department: ProductDepartment[];
   category: ProductCategory[];
   condition: ProductCondition[];
   origin: ProductOrigin[];

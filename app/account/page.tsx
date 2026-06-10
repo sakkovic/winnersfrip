@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { User, ShoppingBag, Heart, Settings, LogOut, Shield, ChevronRight } from 'lucide-react';
+import { User, ShoppingBag, Heart, LogOut, Shield, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -32,10 +32,9 @@ export default function AccountPage() {
   ];
 
   const menuItems = [
-    { label: 'Mes commandes', icon: ShoppingBag, href: '#', desc: 'Historique de vos achats' },
+    { label: 'Mes réservations', icon: ShoppingBag, href: '/account/reservations', desc: 'Historique & annulation' },
     { label: 'Liste de souhaits', icon: Heart, href: '/wishlist', desc: `${wishlistCount} article${wishlistCount > 1 ? 's' : ''}` },
-    { label: 'Paramètres', icon: Settings, href: '#', desc: 'Gérer votre compte' },
-    ...(isAdmin ? [{ label: 'Administration', icon: Shield, href: '/admin', desc: 'Gérer les produits', admin: true }] : []),
+    ...(isAdmin ? [{ label: 'Administration', icon: Shield, href: '/admin', desc: 'Gérer les produits & réservations', admin: true }] : []),
   ];
 
   return (

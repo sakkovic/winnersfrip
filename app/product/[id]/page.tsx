@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { doc, getDoc, getFirestore } from 'firebase/firestore/lite';
+import app from '@/lib/firebase';
 import { getProductById, getRelatedProducts, products } from '@/data/products';
-// --- FIREBASE (à réactiver pour le déploiement) ---
-// import { doc, getDoc, getFirestore } from 'firebase/firestore/lite';
-// import app from '@/lib/firebase';
-// --------------------------------------------------
 import ProductDetailClient from './ProductDetailClient';
 import ProductGrid from '@/components/ProductGrid';
 import type { Product } from '@/types';
@@ -15,35 +13,42 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// Allow product IDs that aren't in generateStaticParams
+// Allow product IDs that aren't in generateStaticParams (e.g. products added
+// via the admin after build).
 export const dynamicParams = true;
 
+// Re-generate the page at most once a minute so admin edits / deletions
+// propagate to the live product URL without a redeploy.
+export const revalidate = 60;
+
 export async function generateStaticParams() {
+  // Pre-render the known seed catalog for fast first loads + SEO. New products
+  // are rendered on demand thanks to dynamicParams.
   return products.map((p) => ({ id: p.id }));
 }
 
 async function fetchProduct(id: string): Promise<Product | null> {
-  // Mode local : données statiques uniquement
-  const local = getProductById(id);
-  if (local) return local;
-
-  /* --- FIREBASE FALLBACK (à réactiver pour le déploiement) ---
+  // Firestore is the source of truth for live management. We read with the
+  // lightweight `firebase/firestore/lite` SDK (no realtime listeners) since
+  // this runs on the server.
   try {
-    const db = getFirestore(app);
-    const snap = await getDoc(doc(db, 'products', id));
+    const fdb = getFirestore(app);
+    const snap = await getDoc(doc(fdb, 'products', id));
     if (snap.exists()) {
-      const data = snap.data();
-      if (data.createdAt?.toDate) data.createdAt = data.createdAt.toDate().toISOString();
-      if (data.updatedAt?.toDate) data.updatedAt = data.updatedAt.toDate().toISOString();
-      const plainData = JSON.parse(JSON.stringify(data));
-      return { id: snap.id, ...plainData } as Product;
+      // Strip Firestore Timestamps (createdAt / updatedAt) — they're not part
+      // of the Product type and aren't serializable to the client component.
+      const { createdAt: _c, updatedAt: _u, ...rest } = snap.data() as Record<string, unknown>;
+      void _c; void _u;
+      const plain = JSON.parse(JSON.stringify(rest));
+      return { id: snap.id, ...plain } as Product;
     }
   } catch (error) {
-    console.error(`Failed to fetch product ${id} from Firestore:`, error);
+    // Network / unseeded / offline build → fall through to the static seed so
+    // the page still renders. Once Firestore is seeded it wins.
+    console.error(`Firestore fetch failed for ${id}, using static fallback:`, error);
   }
-  ------------------------------------------------------------ */
 
-  return null;
+  return getProductById(id) ?? null;
 }
 
 
@@ -51,10 +56,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = await fetchProduct(id);
   if (!product) return { title: 'Produit introuvable' };
+
+  const priceLabel =
+    product.isPromo && product.promoPrice
+      ? `${product.promoPrice} DT (au lieu de ${product.price} DT)`
+      : `${product.price} DT`;
+
+  const description = `${product.description.slice(0, 155)}${
+    product.description.length > 155 ? '…' : ''
+  }`;
+
   return {
     title: product.name,
-    description: product.description,
-    openGraph: { images: [product.images[0]] },
+    description: `${product.name} — ${priceLabel}. ${description}`,
+    openGraph: {
+      type: 'website',
+      title: `${product.name} — ${priceLabel}`,
+      description,
+      images: product.images.slice(0, 4).map((url) => ({ url })),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
+      description,
+      images: product.images.slice(0, 1),
+    },
   };
 }
 
@@ -67,8 +93,41 @@ export default async function ProductPage({ params }: Props) {
   // Related products: from local catalog (same category/gender)
   const related = getRelatedProducts(product, 4);
 
+  // Google-rich-result-friendly Product JSON-LD.  Prices in TND; availability
+  // mirrors the boutique reality (in-stock if a single unit remains).
+  const stockMax = product.stockQuantity ?? 1;
+  const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
+  const jsonLd = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    image: product.images,
+    sku: product.id,
+    ...(product.brand ? { brand: { '@type': 'Brand', name: product.brand } } : {}),
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'TND',
+      price,
+      availability:
+        stockMax > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+      itemCondition:
+        product.condition === 'neuf'
+          ? 'https://schema.org/NewCondition'
+          : 'https://schema.org/UsedCondition',
+    },
+  };
+
   return (
     <div className="min-h-screen">
+      {/* Rich-result structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex items-center gap-1.5 text-xs text-gray-400">

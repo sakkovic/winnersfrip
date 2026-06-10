@@ -1,0 +1,143 @@
+rules_version = '2';
+
+// =============================================================================
+// Winners Superfrip — Firestore security rules
+// -----------------------------------------------------------------------------
+// Trust model:
+//   - The catalog (`products`) is public-read, admin-only-write.
+//   - The admin is identified by a hard-coded email matching the client-side
+//     AuthContext ADMIN_EMAIL.  A future improvement is to issue a custom
+//     claim (`request.auth.token.admin == true`) via the Admin SDK so the
+//     email isn't load-bearing here.  Until then, this is the source of truth.
+//   - Authenticated visitors may CREATE reservations (in-boutique pickup
+//     requests) but cannot list / read / update / delete them.  Only the
+//     admin can read and manage the inbox.
+//   - Anonymous visitors can read products but cannot write anything.
+//   - Each user has a /users/{uid} doc they own — bootstrapped on sign-in.
+//
+// Deploy with:
+//   firebase deploy --only firestore:rules
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+          && request.auth.token.email == 'anis.federe@gmail.com'
+          && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Shallow validation that a product write isn't garbage.
+    function isProductPayload() {
+      return request.resource.data.keys().hasAll(['name', 'price', 'department', 'category'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 200
+          && request.resource.data.price is number
+          && request.resource.data.price >= 0
+          && request.resource.data.price <= 100000
+          && request.resource.data.department in ['mode', 'beaute']
+          && request.resource.data.category is string;
+    }
+
+    function isReservationPayload() {
+      return request.resource.data.keys().hasAll(['phone', 'items', 'createdAt'])
+          && request.resource.data.phone is string
+          && request.resource.data.phone.size() >= 6
+          && request.resource.data.phone.size() <= 30
+          && request.resource.data.items is list
+          && request.resource.data.items.size() > 0
+          && request.resource.data.items.size() <= 50;
+    }
+
+    // -------------------------------------------------------------------------
+    // /products/{productId} — public catalog
+    // -------------------------------------------------------------------------
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isProductPayload();
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // /users/{uid} — per-user profile (created on sign-in)
+    // -------------------------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      // Users can create their own doc but cannot promote themselves to admin
+      // via this path.  Role escalation must happen through a privileged
+      // server (Admin SDK / Cloud Function).
+      allow create: if isOwner(uid)
+                    && (!('role' in request.resource.data) || request.resource.data.role != 'admin');
+      // Update: owner can update their own profile fields (phone, firstName,
+      // lastName, etc.) but cannot change `role`.  If `role` is present in the
+      // resource, the new and old values must match.
+      allow update: if isOwner(uid)
+                    && (!('role' in resource.data)
+                        || !('role' in request.resource.data)
+                        || request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // /reservations/{reservationId} — in-boutique pickup requests
+    // -------------------------------------------------------------------------
+    match /reservations/{reservationId} {
+      // Authenticated visitors can create their own reservations.  Anonymous
+      // visitors cannot — login is the trade-off for sending a request.
+      allow create: if isSignedIn()
+                    && isReservationPayload()
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Customers can read only their own; admin sees everything.
+      allow read:   if isAdmin()
+                    || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      // Update rules:
+      //   - Admin can change any field (e.g. mark `confirmed`, `completed`).
+      //   - Owner can transition their own `pending` reservation to
+      //     `cancelled` ONLY, touching only `status` + `cancelledAt`.
+      allow update: if isAdmin()
+                    || (
+                      isSignedIn()
+                      && resource.data.userId == request.auth.uid
+                      && resource.data.status == 'pending'
+                      && request.resource.data.status == 'cancelled'
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['status', 'cancelledAt'])
+                    );
+
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // /newsletter_signups/{email} — newsletter subscriptions
+    // -------------------------------------------------------------------------
+    match /newsletter_signups/{docId} {
+      // Anyone can add their email; nobody but admin can list/read them.
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 5
+                    && request.resource.data.email.size() < 200;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // Deny everything else by default
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

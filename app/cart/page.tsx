@@ -5,12 +5,11 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, X, ShoppingBag, ArrowRight, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import type { Metadata } from 'next';
+import { maxCartQuantity } from '@/lib/utils';
+import PickupRules from '@/components/PickupRules';
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
-
-  const shipping = cartTotal > 0 ? (cartTotal >= 80 ? 0 : 500) : 0;
 
   if (cart.length === 0) {
     return (
@@ -90,23 +89,34 @@ export default function CartPage() {
                     </div>
 
                     <div className="flex items-center justify-between mt-auto pt-4">
-                      <div className="flex items-center border border-gray-200">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Minus size={10} />
-                        </button>
-                        <span className="w-8 text-center text-xs font-medium">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Plus size={10} />
-                        </button>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center border border-gray-200">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Diminuer la quantité"
+                          >
+                            <Minus size={10} />
+                          </button>
+                          <span className="w-8 text-center text-xs font-medium tabular-nums">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={item.quantity >= maxCartQuantity(item.stockQuantity)}
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Augmenter la quantité"
+                          >
+                            <Plus size={10} />
+                          </button>
+                        </div>
+                        {maxCartQuantity(item.stockQuantity) > 1 && (
+                          <p className="text-[10px] text-gray-400">
+                            Stock disponible : <span className="tabular-nums">{maxCartQuantity(item.stockQuantity)}</span>
+                          </p>
+                        )}
                       </div>
-                      <span className="text-sm font-bold">
-                        {(item.isPromo && item.promoPrice ? item.promoPrice : item.price) * item.quantity}€
+                      <span className="text-sm font-bold tabular-nums">
+                        {(item.isPromo && item.promoPrice ? item.promoPrice : item.price) * item.quantity} DT
                       </span>
                     </div>
                   </div>
@@ -124,31 +134,22 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* Summary */}
+          {/* Summary — boutique pickup, no shipping/payment */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-50 p-6 sticky top-24">
+            <div className="bg-gray-50 p-6 sticky top-[108px]">
               <h2 className="text-sm font-bold tracking-widest uppercase mb-6">Récapitulatif</h2>
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Sous-total</span>
-                  <span className="font-medium">{cartTotal}€</span>
+                  <span className="text-gray-500">Articles</span>
+                  <span className="font-medium tabular-nums">{cart.length}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Livraison</span>
-                  <span className="font-medium">{shipping === 0 ? 'Gratuite' : `${shipping} DA`}</span>
-                </div>
-                {cartTotal > 0 && cartTotal < 80 && (
-                  <p className="text-[10px] text-gray-400">
-                    Plus que {80 - cartTotal}€ pour la livraison gratuite
-                  </p>
-                )}
               </div>
 
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between text-base font-bold">
-                  <span>Total</span>
-                  <span>{cartTotal}€</span>
+                  <span>Total à régler en boutique</span>
+                  <span className="tabular-nums">{cartTotal} DT</span>
                 </div>
               </div>
 
@@ -156,12 +157,20 @@ export default function CartPage() {
                 href="/checkout"
                 className="block w-full bg-brand-black text-white text-xs font-bold tracking-widest uppercase text-center py-4 hover:bg-gray-800 transition-colors"
               >
-                Commander
+                Réserver en boutique
               </Link>
 
-              <p className="text-[10px] text-gray-400 text-center mt-3">
-                Paiement sécurisé · Retour gratuit 14j
+              <p className="text-[10px] text-gray-500 text-center mt-3 leading-relaxed">
+                Réservation gratuite · Règlement et retrait sur place à Monastir
               </p>
+
+              {/* Compact rule reminder */}
+              <div className="mt-5 pt-5 border-t border-gray-200">
+                <p className="text-[10px] tracking-widest uppercase text-brand-warm font-semibold mb-2">
+                  À savoir
+                </p>
+                <PickupRules variant="compact" />
+              </div>
             </div>
           </div>
         </div>

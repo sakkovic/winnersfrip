@@ -98,7 +98,7 @@ export default function CartSidebar() {
                             </button>
                           </div>
                           <span className="text-sm font-semibold">
-                            {(item.isPromo && item.promoPrice ? item.promoPrice : item.price) * item.quantity}€
+                            {(item.isPromo && item.promoPrice ? item.promoPrice : item.price) * item.quantity} DT
                           </span>
                         </div>
                       </div>
@@ -108,20 +108,20 @@ export default function CartSidebar() {
               )}
             </div>
 
-            {/* Footer */}
+            {/* Footer — boutique pickup model, no shipping */}
             {cart.length > 0 && (
               <div className="border-t border-gray-100 p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Sous-total</span>
-                  <span className="text-base font-bold">{cartTotal}€</span>
+                  <span className="text-sm text-gray-500">Total en boutique</span>
+                  <span className="text-base font-bold tabular-nums">{cartTotal} DT</span>
                 </div>
-                <p className="text-[10px] text-gray-400 text-center">Frais de livraison calculés à la commande</p>
+                <p className="text-[10px] text-gray-400 text-center">À régler sur place à Monastir</p>
                 <Link
                   href="/checkout"
                   onClick={() => setIsCartOpen(false)}
                   className="block w-full bg-brand-black text-white text-xs font-bold tracking-widest uppercase text-center py-4 hover:bg-gray-800 transition-colors"
                 >
-                  Commander
+                  Réserver en boutique
                 </Link>
                 <Link
                   href="/cart"

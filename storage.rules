@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// =============================================================================
+// Winners Superfrip — Firebase Storage security rules
+// -----------------------------------------------------------------------------
+// Trust model:
+//   - /products/{file} : product images.  Publicly readable so the public
+//     catalog can render <img src=…>.  Only the admin can upload, replace
+//     or delete.
+//   - Anything outside /products is denied.
+//
+// Deploy with:
+//   firebase deploy --only storage:rules
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'anis.federe@gmail.com'
+          && request.auth.token.email_verified == true;
+    }
+
+    function isReasonableImage() {
+      return request.resource != null
+          && request.resource.size > 0
+          && request.resource.size < 10 * 1024 * 1024 // 10 MB
+          && request.resource.contentType.matches('image/(jpeg|png|webp|avif|gif)');
+    }
+
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isReasonableImage();
+      allow delete: if isAdmin();
+    }
+
+    // Deny by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

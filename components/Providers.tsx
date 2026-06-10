@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
-import CartSidebar from './CartSidebar';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +11,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <CartProvider>
         <WishlistProvider>
           {children}
-          <CartSidebar />
           <Toaster
             position="top-right"
             toastOptions={{

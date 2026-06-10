@@ -5,11 +5,15 @@ import { X, ChevronDown, ChevronUp, Check, SlidersHorizontal } from 'lucide-reac
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
-  COLORS, CATEGORIES, CONDITIONS, GENDERS, STYLES, ORIGINS,
+  COLORS, CONDITIONS, GENDERS, STYLES, ORIGINS,
   PRICE_RANGES, CLOTHING_SIZES, SHOE_SIZES, CONDITION_LABELS,
+  DEPARTMENTS, DEPARTMENT_LABELS, MODE_CATEGORIES, BEAUTE_CATEGORIES, CATEGORY_LABELS,
   type ColorEntry,
 } from '@/lib/constants';
-import type { FilterState, ProductCategory, ProductCondition, ProductGender, ProductStyle, ProductOrigin } from '@/types';
+import type {
+  FilterState, ProductCategory, ProductCondition, ProductGender,
+  ProductStyle, ProductOrigin, ProductDepartment,
+} from '@/types';
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 
@@ -25,6 +29,7 @@ function Section({ title, children, defaultOpen = false, count = 0 }: {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        suppressHydrationWarning
         className="w-full flex items-center justify-between py-3 text-left group"
       >
         <span className="flex items-center gap-2">
@@ -56,6 +61,7 @@ function CheckRow({ label, checked, onChange, accent }: {
     <button
       type="button"
       onClick={onChange}
+      suppressHydrationWarning
       className="flex items-center gap-2.5 w-full py-1 group"
     >
       <div className={cn(
@@ -64,9 +70,29 @@ function CheckRow({ label, checked, onChange, accent }: {
       )}>
         {checked && <Check size={8} className="text-white" strokeWidth={3} />}
       </div>
-      <span className={cn('text-xs capitalize leading-none', accent ?? 'text-gray-600 group-hover:text-brand-black transition-colors')}>
+      <span className={cn('text-xs leading-none', accent ?? 'text-gray-600 group-hover:text-brand-black transition-colors')}>
         {label}
       </span>
+    </button>
+  );
+}
+
+// ─── Department pill ──────────────────────────────────────────────────────────
+
+function DepartmentPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      suppressHydrationWarning
+      className={cn(
+        'flex-1 text-[11px] font-bold tracking-widest uppercase py-2 transition-all duration-300 border',
+        active
+          ? 'bg-brand-black text-white border-brand-black'
+          : 'bg-white text-gray-600 border-gray-200 hover:border-brand-warm hover:text-brand-warm',
+      )}
+    >
+      {label}
     </button>
   );
 }
@@ -78,6 +104,7 @@ function SizePill({ size, selected, onClick }: { size: string; selected: boolean
     <button
       type="button"
       onClick={onClick}
+      suppressHydrationWarning
       className={cn(
         'text-[11px] font-medium border px-2.5 py-1 transition-all leading-none',
         selected
@@ -102,9 +129,8 @@ function ColorSwatch({ color, selected, onClick }: {
       type="button"
       onClick={onClick}
       title={color.label}
-      className={cn(
-        'flex flex-col items-center gap-1 group',
-      )}
+      suppressHydrationWarning
+      className={cn('flex flex-col items-center gap-1 group')}
     >
       <div
         className={cn(
@@ -147,8 +173,20 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
     });
   };
 
+  // Derive context: which categories are visible depends on selected department(s)
+  const beautyOnly = filters.department.length === 1 && filters.department[0] === 'beaute';
+  const modeOnly   = filters.department.length === 1 && filters.department[0] === 'mode';
+  // Show clothing-specific sections only when beauty isn't the sole selection
+  const showClothingSections = !beautyOnly;
+
+  const visibleCategories: readonly ProductCategory[] = beautyOnly
+    ? BEAUTE_CATEGORIES
+    : modeOnly
+      ? MODE_CATEGORIES
+      : [...MODE_CATEGORIES, ...BEAUTE_CATEGORIES];
+
   const activeCount =
-    filters.category.length + filters.condition.length + filters.origin.length +
+    filters.department.length + filters.category.length + filters.condition.length + filters.origin.length +
     filters.gender.length + filters.style.length + filters.size.length +
     filters.color.length + filters.priceRange.length +
     (filters.promotions ? 1 : 0) + (filters.newArrivals ? 1 : 0);
@@ -171,12 +209,13 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
             <button
               type="button"
               onClick={onReset}
+              suppressHydrationWarning
               className="text-[10px] tracking-wider uppercase text-gray-400 hover:text-red-500 transition-colors"
             >
               Effacer tout
             </button>
           )}
-          <button type="button" onClick={onMobileClose} className="lg:hidden p-0.5 text-gray-500">
+          <button type="button" onClick={onMobileClose} suppressHydrationWarning className="lg:hidden p-0.5 text-gray-500">
             <X size={16} />
           </button>
         </div>
@@ -184,6 +223,22 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto pr-0.5">
+        {/* Department selector */}
+        <div className="py-3 border-b border-gray-100">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-brand-warm mb-2">Département</p>
+          <div className="flex gap-1.5">
+            {DEPARTMENTS.map((d) => (
+              <DepartmentPill
+                key={d}
+                label={DEPARTMENT_LABELS[d]}
+                active={filters.department.includes(d)}
+                onClick={() => toggle('department', d as ProductDepartment)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Quick toggles */}
         <div className="py-3 border-b border-gray-100 space-y-2">
           <CheckRow
             label="Nouveautés"
@@ -212,27 +267,13 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
           </div>
         </Section>
 
-        {/* Genre */}
-        <Section title="Genre" defaultOpen count={filters.gender.length}>
+        {/* Catégorie — labelled per-department */}
+        <Section title="Catégorie" defaultOpen={!!filters.department.length} count={filters.category.length}>
           <div className="space-y-1">
-            {GENDERS.map((g) => (
-              <CheckRow
-                key={g}
-                label={g}
-                checked={filters.gender.includes(g)}
-                onChange={() => toggle('gender', g as ProductGender)}
-              />
-            ))}
-          </div>
-        </Section>
-
-        {/* Catégorie */}
-        <Section title="Catégorie" count={filters.category.length}>
-          <div className="space-y-1">
-            {CATEGORIES.map((c) => (
+            {visibleCategories.map((c) => (
               <CheckRow
                 key={c}
-                label={c}
+                label={CATEGORY_LABELS[c] ?? c}
                 checked={filters.category.includes(c)}
                 onChange={() => toggle('category', c as ProductCategory)}
               />
@@ -240,33 +281,68 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
           </div>
         </Section>
 
-        {/* État */}
-        <Section title="État" count={filters.condition.length}>
+        {/* Genre */}
+        <Section title="Genre" count={filters.gender.length}>
           <div className="space-y-1">
-            {CONDITIONS.map((c) => (
+            {GENDERS.map((g) => (
               <CheckRow
-                key={c}
-                label={CONDITION_LABELS[c]}
-                checked={filters.condition.includes(c)}
-                onChange={() => toggle('condition', c as ProductCondition)}
+                key={g}
+                label={g.charAt(0).toUpperCase() + g.slice(1)}
+                checked={filters.gender.includes(g)}
+                onChange={() => toggle('gender', g as ProductGender)}
               />
             ))}
           </div>
         </Section>
 
-        {/* Style */}
-        <Section title="Style" count={filters.style.length}>
-          <div className="space-y-1">
-            {STYLES.map((s) => (
-              <CheckRow
-                key={s}
-                label={s}
-                checked={filters.style.includes(s)}
-                onChange={() => toggle('style', s as ProductStyle)}
-              />
-            ))}
-          </div>
-        </Section>
+        {/* Clothing-only sections */}
+        {showClothingSections && (
+          <>
+            <Section title="État" count={filters.condition.length}>
+              <div className="space-y-1">
+                {CONDITIONS.map((c) => (
+                  <CheckRow
+                    key={c}
+                    label={CONDITION_LABELS[c]}
+                    checked={filters.condition.includes(c)}
+                    onChange={() => toggle('condition', c as ProductCondition)}
+                  />
+                ))}
+              </div>
+            </Section>
+
+            <Section title="Style" count={filters.style.length}>
+              <div className="space-y-1">
+                {STYLES.map((s) => (
+                  <CheckRow
+                    key={s}
+                    label={s.charAt(0).toUpperCase() + s.slice(1)}
+                    checked={filters.style.includes(s)}
+                    onChange={() => toggle('style', s as ProductStyle)}
+                  />
+                ))}
+              </div>
+            </Section>
+
+            <Section title="Taille" count={filters.size.length}>
+              <div className="space-y-2.5">
+                <p className="text-[9px] tracking-widest uppercase text-gray-400">Vêtements</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {CLOTHING_SIZES.map((s) => (
+                    <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
+                  ))}
+                </div>
+                <p className="text-[9px] tracking-widest uppercase text-gray-400 pt-1">Chaussures</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SHOE_SIZES.map((s) => (
+                    <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
+                  ))}
+                </div>
+                <SizePill size="unique" selected={filters.size.includes('unique')} onClick={() => toggle('size', 'unique')} />
+              </div>
+            </Section>
+          </>
+        )}
 
         {/* Couleurs */}
         <Section title="Couleur" count={filters.color.length}>
@@ -279,25 +355,6 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
                 onClick={() => toggle('color', c.value as string)}
               />
             ))}
-          </div>
-        </Section>
-
-        {/* Taille */}
-        <Section title="Taille" count={filters.size.length}>
-          <div className="space-y-2.5">
-            <p className="text-[9px] tracking-widest uppercase text-gray-400">Vêtements</p>
-            <div className="flex flex-wrap gap-1.5">
-              {CLOTHING_SIZES.map((s) => (
-                <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
-              ))}
-            </div>
-            <p className="text-[9px] tracking-widest uppercase text-gray-400 pt-1">Chaussures</p>
-            <div className="flex flex-wrap gap-1.5">
-              {SHOE_SIZES.map((s) => (
-                <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
-              ))}
-            </div>
-            <SizePill size="unique" selected={filters.size.includes('unique')} onClick={() => toggle('size', 'unique')} />
           </div>
         </Section>
 
@@ -321,7 +378,7 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-48 flex-shrink-0">{body}</aside>
+      <aside className="hidden lg:block w-52 flex-shrink-0">{body}</aside>
 
       {/* Mobile drawer */}
       <AnimatePresence>
