@@ -762,27 +762,6 @@ export default function AdminPage() {
             <Shield size={16} strokeWidth={1.5} className="text-brand-black flex-shrink-0" />
             <h1 className="text-xs font-bold tracking-widest uppercase flex-shrink-0">Administration</h1>
             <span className="text-xs text-gray-400 hidden sm:inline flex-shrink-0">— {products.length} produit{products.length !== 1 ? 's' : ''}</span>
-            <Link
-              href="/admin/clients"
-              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors inline-flex items-center gap-1.5 flex-shrink-0"
-            >
-              <span>Clients</span>
-              <span className="text-gray-300">→</span>
-            </Link>
-            <Link
-              href="/admin/reservations"
-              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors inline-flex items-center gap-1.5 flex-shrink-0"
-            >
-              <span>Réservations</span>
-              <span className="text-gray-300">→</span>
-            </Link>
-            <Link
-              href="/admin/avis"
-              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors inline-flex items-center gap-1.5 flex-shrink-0"
-            >
-              <span>Avis</span>
-              <span className="text-gray-300">→</span>
-            </Link>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={fetchProducts} title="Actualiser" className="p-2 text-gray-400 hover:text-brand-black transition-colors">
@@ -801,6 +780,31 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+        {/* Navigation buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link
+            href="/admin/clients"
+            className="bg-white border border-gray-200 px-4 py-3 flex items-center justify-between hover:border-brand-black transition-colors group"
+          >
+            <span className="text-[11px] font-bold tracking-widest uppercase text-brand-black">Clients</span>
+            <span className="text-gray-300 group-hover:text-brand-black transition-colors">→</span>
+          </Link>
+          <Link
+            href="/admin/reservations"
+            className="bg-white border border-gray-200 px-4 py-3 flex items-center justify-between hover:border-brand-black transition-colors group"
+          >
+            <span className="text-[11px] font-bold tracking-widest uppercase text-brand-black">Réservations</span>
+            <span className="text-gray-300 group-hover:text-brand-black transition-colors">→</span>
+          </Link>
+          <Link
+            href="/admin/avis"
+            className="bg-white border border-gray-200 px-4 py-3 flex items-center justify-between hover:border-brand-black transition-colors group"
+          >
+            <span className="text-[11px] font-bold tracking-widest uppercase text-brand-black">Avis</span>
+            <span className="text-gray-300 group-hover:text-brand-black transition-colors">→</span>
+          </Link>
+        </div>
 
         {/* Stats strip — clickable to filter */}
         <div className="grid grid-cols-2 gap-3">
