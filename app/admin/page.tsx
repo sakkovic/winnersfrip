@@ -366,9 +366,10 @@ export default function AdminPage() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
                   transition={{ duration: 0.15 }}
-                  className="flex flex-col sm:grid sm:grid-cols-[56px_1fr_80px_auto_110px] gap-3 sm:gap-4 sm:items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                  className="relative flex flex-col sm:grid sm:grid-cols-[56px_1fr_80px_auto_110px] gap-3 sm:gap-4 sm:items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
                 >
-                  <Link href={`/admin/product/${p.id}`} className="flex gap-3 sm:contents group cursor-pointer">
+                  <Link href={`/admin/product/${p.id}`} className="absolute inset-0 z-10" aria-label="Modifier le produit" />
+                  <div className="flex gap-3 sm:contents pointer-events-none">
                   {/* Thumb */}
                   <div className="w-12 h-14 bg-gray-100 overflow-hidden relative flex-shrink-0">
                     {p.images?.[0] ? (
@@ -395,7 +396,7 @@ export default function AdminPage() {
                       <span className="text-[10px] text-gray-400 capitalize">{p.gender}</span>
                     </div>
                   </div>
-                  </Link>
+                  </div>
 
                   <div className="flex items-center justify-between sm:contents mt-1 sm:mt-0">
                   {/* Price */}
@@ -412,7 +413,7 @@ export default function AdminPage() {
 
                   <div className="flex items-center gap-2 sm:contents">
                   {/* Toggles */}
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 relative z-20">
                     <ToggleBtn
                       active={!!p.isPromo}
                       onClick={() => handleToggle(p.id, 'isPromo', !p.isPromo)}
@@ -423,7 +424,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end gap-1 border-l border-gray-100 pl-2 sm:border-none sm:pl-0">
+                  <div className="flex items-center justify-end gap-1 border-l border-gray-100 pl-2 sm:border-none sm:pl-0 relative z-20">
                     <Link
                       href={`/product/${p.id}`}
                       target="_blank"
