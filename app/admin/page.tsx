@@ -755,8 +755,8 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Sticky top bar — sits flush under the global navbar (28 px announcement + 64 px nav) */}
-      <div className="bg-white border-b border-gray-100 sticky top-[92px] z-30">
+      {/* Sticky top bar — sits flush under the global navbar (64 px nav) */}
+      <div className="bg-white border-b border-gray-100 sticky top-[64px] z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
             <Shield size={16} strokeWidth={1.5} className="text-brand-black flex-shrink-0" />

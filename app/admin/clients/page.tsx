@@ -198,7 +198,7 @@ export default function AdminClientsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sticky top bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-[92px] z-30">
+      <div className="bg-white border-b border-gray-100 sticky top-[64px] z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/admin" className="text-gray-400 hover:text-brand-black transition-colors">

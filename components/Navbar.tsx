@@ -19,11 +19,7 @@ const navLinks = [
   { href: '/contact',               label: 'Contact' },
 ];
 
-const announcements = [
-  'BOUTIQUE À MONASTIR · MODE & BEAUTÉ',
-  'PIÈCES UNIQUES IMPORTÉES D\'EUROPE',
-  'NOUVEAUX ARRIVAGES CHAQUE SEMAINE',
-];
+
 
 function Badge({ count }: { count: number }) {
   return (
@@ -52,7 +48,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [announceIndex, setAnnounceIndex] = useState(0);
+
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, 'change', (y) => setIsScrolled(y > 20));
@@ -62,36 +58,14 @@ export default function Navbar() {
     setSearchOpen(false);
   }, [pathname]);
 
-  // Rotate announcement bar
-  useEffect(() => {
-    const id = setInterval(() => {
-      setAnnounceIndex((i) => (i + 1) % announcements.length);
-    }, 4500);
-    return () => clearInterval(id);
-  }, []);
+
 
   return (
     <>
-      {/* ── Announcement bar ── */}
-      <div className="fixed top-0 left-0 right-0 z-[60] h-7 overflow-hidden bg-brand-black text-white">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={announceIndex}
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '-100%', opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="h-full flex items-center justify-center text-[10px] tracking-[0.3em] font-medium"
-          >
-            <span className="text-gold-shimmer">{announcements[announceIndex]}</span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
       <motion.header
         initial={false}
         animate={{
-          y: 28,
+          y: 0,
           backgroundColor: isScrolled ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.96)',
           boxShadow: isScrolled ? '0 10px 30px -20px rgba(0,0,0,0.18)' : '0 0 0 rgba(0,0,0,0)',
         }}

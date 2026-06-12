@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <Providers>
           <Navbar />
-          <main className="pt-[92px]">{children}</main>
+          <main className="pt-[64px]">{children}</main>
           <BrandsMarquee />
           <Footer />
         </Providers>

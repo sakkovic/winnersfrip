@@ -21,7 +21,7 @@ export default function ContactPage() {
   return (
     <div className="bg-white overflow-hidden flex flex-col">
       {/* Main Content — Split Screen */}
-      <div className="flex flex-col lg:flex-row lg:min-h-[calc(100vh-92px)]">
+      <div className="flex flex-col lg:flex-row lg:min-h-[calc(100vh-64px)]">
 
         {/* Left Side: Editorial Content — mesh-cream background */}
         <div className="relative w-full lg:w-1/2 bg-mesh-cream flex flex-col justify-center px-8 py-16 sm:px-16 lg:px-24">
