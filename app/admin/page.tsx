@@ -37,11 +37,11 @@ function ToggleBtn({ active, onClick, title, activeColor, icon: Icon }: {
       onClick={onClick}
       title={title}
       className={cn(
-        'p-1.5 rounded-sm transition-all flex items-center gap-1',
+        'p-2 rounded-sm transition-all flex items-center gap-1',
         active ? activeColor : 'text-gray-300 hover:text-gray-500 hover:bg-gray-50',
       )}
     >
-      <Icon size={13} strokeWidth={1.8} />
+      <Icon size={16} strokeWidth={1.8} />
     </button>
   );
 }
@@ -368,7 +368,7 @@ export default function AdminPage() {
                   transition={{ duration: 0.15 }}
                   className="flex flex-col sm:grid sm:grid-cols-[56px_1fr_80px_auto_110px] gap-3 sm:gap-4 sm:items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex gap-3 sm:contents">
+                  <Link href={`/admin/product/${p.id}`} className="flex gap-3 sm:contents group cursor-pointer">
                   {/* Thumb */}
                   <div className="w-12 h-14 bg-gray-100 overflow-hidden relative flex-shrink-0">
                     {p.images?.[0] ? (
@@ -395,7 +395,7 @@ export default function AdminPage() {
                       <span className="text-[10px] text-gray-400 capitalize">{p.gender}</span>
                     </div>
                   </div>
-                  </div>
+                  </Link>
 
                   <div className="flex items-center justify-between sm:contents mt-1 sm:mt-0">
                   {/* Price */}
@@ -427,24 +427,24 @@ export default function AdminPage() {
                     <Link
                       href={`/product/${p.id}`}
                       target="_blank"
-                      className="p-1.5 text-gray-300 hover:text-blue-500 transition-colors"
+                      className="p-2 text-gray-300 hover:text-blue-500 transition-colors"
                       title="Voir sur le site"
                     >
-                      <ExternalLink size={13} />
+                      <ExternalLink size={16} />
                     </Link>
                     <Link
                       href={`/admin/product/${p.id}`}
-                      className="p-1.5 text-gray-400 hover:text-brand-black transition-colors"
+                      className="p-2 text-gray-400 hover:text-brand-black transition-colors"
                       title="Modifier"
                     >
-                      <Pencil size={13} />
+                      <Pencil size={16} />
                     </Link>
                     <button
                       onClick={() => setConfirmDelete(p.id)}
-                      className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
                       title="Supprimer"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                   </div>
