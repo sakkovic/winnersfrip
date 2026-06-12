@@ -1,5 +1,6 @@
 'use client';
 
+import { MotionConfig } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
@@ -10,7 +11,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
-          {children}
+          {/* Make every framer-motion animation respect the OS "reduce motion"
+              accessibility setting (CSS @media only covers CSS animations). */}
+          <MotionConfig reducedMotion="user">
+            {children}
+          </MotionConfig>
           <Toaster
             position="top-right"
             toastOptions={{

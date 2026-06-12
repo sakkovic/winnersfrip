@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Star, PenLine } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import StarRating from './StarRating';
@@ -95,6 +95,7 @@ export default function ReviewsSection({ initialReviews }: { initialReviews: Rev
   const [modalOpen, setModalOpen] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   const { avg, count } = useMemo(() => {
     if (reviews.length === 0) return { avg: 0, count: 0 };
@@ -113,7 +114,7 @@ export default function ReviewsSection({ initialReviews }: { initialReviews: Rev
   // Gentle autoplay; pauses on hover/focus and when only a few cards.
   useEffect(() => {
     const el = scrollerRef.current;
-    if (!el || reviews.length <= 3) return;
+    if (!el || reviews.length <= 3 || reduceMotion) return;
     const id = setInterval(() => {
       if (paused) return;
       if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 8) {
@@ -123,7 +124,7 @@ export default function ReviewsSection({ initialReviews }: { initialReviews: Rev
       }
     }, 5000);
     return () => clearInterval(id);
-  }, [paused, reviews.length]);
+  }, [paused, reviews.length, reduceMotion]);
 
   const handleSubmitted = (review: Review) => {
     setReviews((prev) => [review, ...prev.filter((r) => r.userId !== review.userId)]);

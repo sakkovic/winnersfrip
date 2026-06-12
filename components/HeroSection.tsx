@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 
 // ── Slide data (FR) ──────────────────────────────────────────────────────────
@@ -11,35 +11,35 @@ import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 const slides = [
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1920&q=85',
-    label: 'MODE · BEAUTÉ · MONASTIR',
-    title: 'Mode & Beauté,\nsous un même toit.',
-    subtitle: 'Vintage, streetwear, parfums et soins.\nUne sélection pointue à prix doux.',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=85',
+    label: 'WINNERS MODE · MONASTIR',
+    title: 'Bienvenue\nchez Winners Mode.',
+    subtitle: 'Votre boutique mode & beauté à Monastir. Des pièces uniques, choisies à la main et importées d\'Europe.',
     cta: { text: 'Découvrir la boutique', href: '/shop' },
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1920&q=85',
+    image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1920&q=85',
     label: 'PIÈCES UNIQUES · IMPORT EUROPE',
-    title: 'Un style qui\nvous ressemble.',
-    subtitle: 'Du vintage rare au streetwear iconique. Des pièces choisies à la main, en quantité limitée.',
+    title: 'Chaque pièce\na son histoire.',
+    subtitle: 'Vintage, streetwear et grandes marques : une sélection pointue, en quantité limitée. Une fois partie, une pièce ne revient pas.',
     cta: { text: 'Voir les vêtements', href: '/shop?department=mode' },
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1920&q=85',
+    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1920&q=85',
     label: 'PARFUMS · SOINS · MAQUILLAGE',
-    title: 'Une beauté\nqui vous suit.',
-    subtitle: 'Parfums signature, soins clean et maquillage premium. La beauté à portée de main.',
+    title: 'La beauté,\nnotre signature.',
+    subtitle: 'Parfums, soins et maquillage soigneusement sélectionnés pour révéler le meilleur de vous.',
     cta: { text: 'Explorer la beauté', href: '/shop?department=beaute' },
   },
   {
     id: 4,
     image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1920&q=85',
-    label: 'NOUVEAUX ARRIVAGES · PIÈCES LIMITÉES',
-    title: 'Une nouvelle\ngarde-robe.',
-    subtitle: 'Des arrivages chaque semaine. Mode et beauté, à découvrir avant tout le monde.',
-    cta: { text: 'Voir les nouveautés', href: '/shop?new=true' },
+    label: 'BOUTIQUE À MONASTIR · DEPUIS 2024',
+    title: 'On vous attend\nen boutique.',
+    subtitle: 'Réservez en ligne, venez essayer et régler sur place. L\'accueil et le conseil d\'une vraie boutique de quartier.',
+    cta: { text: 'Nous trouver', href: '/contact' },
   },
 ];
 
@@ -60,6 +60,7 @@ function splitWords(text: string) {
 export default function HeroSection() {
   const [current, setCurrent] = useState(0);
   const [isAutoplay, setIsAutoplay] = useState(true);
+  const reduceMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
 
   const total = slides.length;
@@ -71,12 +72,12 @@ export default function HeroSection() {
   const next = useCallback(() => go(current + 1), [current, go]);
   const prev = useCallback(() => go(current - 1), [current, go]);
 
-  // Autoplay
+  // Autoplay — paused on hover and disabled when the user prefers reduced motion.
   useEffect(() => {
-    if (!isAutoplay) return;
+    if (!isAutoplay || reduceMotion) return;
     const timer = setInterval(next, SLIDE_DURATION);
     return () => clearInterval(timer);
-  }, [isAutoplay, next]);
+  }, [isAutoplay, next, reduceMotion]);
 
   // Parallax based on scroll within the hero
   const { scrollY } = useScroll();
@@ -243,6 +244,31 @@ export default function HeroSection() {
           </div>
         </div>
       </motion.div>
+
+      {/* ── Brand logo on the welcome slide (desktop) ── */}
+      <AnimatePresence>
+        {current === 0 && (
+          <motion.div
+            key="welcome-logo"
+            initial={{ opacity: 0, scale: 0.92, x: 24 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="hidden lg:block absolute right-10 xl:right-24 top-[40%] -translate-y-1/2 z-10"
+          >
+            <div className="bg-white/90 backdrop-blur-md rounded-3xl px-10 py-9 shadow-2xl border border-white/40">
+              <Image
+                src="/logo.png"
+                alt="Winners Mode"
+                width={1200}
+                height={545}
+                className="w-56 xl:w-72 h-auto"
+                priority
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Prev / Next arrows ── */}
       <button
