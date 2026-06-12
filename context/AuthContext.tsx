@@ -51,10 +51,10 @@ export function useAuth() {
 // The admin email is treated as the sole owner. Any other user is "client".
 // Firestore can later override a user's role via /users/{uid}.role.
 
-const ADMIN_EMAIL = 'anis.federe@gmail.com';
+const ADMIN_EMAILS = ['anis.federe@gmail.com', 'maleksakkaepbouzgarrou@gmail.com'];
 
 async function resolveRole(user: FirebaseUser): Promise<'admin' | 'client'> {
-  if (user.email === ADMIN_EMAIL) return 'admin';
+  if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) return 'admin';
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (snap.exists()) return (snap.data().role as 'admin' | 'client') ?? 'client';
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (email: string, password: string, name: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     if (name) await updateProfile(user, { displayName: name });
-    const role: 'admin' | 'client' = email === ADMIN_EMAIL ? 'admin' : 'client';
+    const role: 'admin' | 'client' = (email && ADMIN_EMAILS.includes(email.toLowerCase())) ? 'admin' : 'client';
     // Send the email-verification link. Non-fatal: account still works if it fails.
     try {
       await sendEmailVerification(user);
