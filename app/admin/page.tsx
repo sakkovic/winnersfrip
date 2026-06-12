@@ -163,14 +163,14 @@ export default function AdminPage() {
             <button onClick={fetchProducts} title="Actualiser" className="p-2 text-gray-400 hover:text-brand-black transition-colors">
               <RefreshCw size={14} className={fetching ? 'animate-spin' : ''} />
             </button>
-            <button
-              onClick={() => { setEditTarget(null); setFormOpen(true); }}
+            <Link
+              href="/admin/product/new"
               className="flex items-center gap-1.5 bg-brand-black text-white text-[11px] font-bold tracking-widest uppercase px-4 py-2 hover:bg-gray-800 transition-colors"
             >
               <Plus size={13} />
               <span className="hidden sm:inline">Ajouter un produit</span>
               <span className="sm:hidden">Ajouter</span>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -432,13 +432,13 @@ export default function AdminPage() {
                     >
                       <ExternalLink size={13} />
                     </Link>
-                    <button
-                      onClick={() => { setEditTarget(p); setFormOpen(true); }}
+                    <Link
+                      href={`/admin/product/${p.id}`}
                       className="p-1.5 text-gray-400 hover:text-brand-black transition-colors"
                       title="Modifier"
                     >
                       <Pencil size={13} />
-                    </button>
+                    </Link>
                     <button
                       onClick={() => setConfirmDelete(p.id)}
                       className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
