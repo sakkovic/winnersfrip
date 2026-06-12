@@ -3,11 +3,7 @@
 import { Mail, Phone, Instagram, Facebook, MapPin, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BOUTIQUE } from '@/lib/boutique-rules';
-
-const BRANDS = [
-  "Nike", "Adidas", "Zara", "Puma", "The North Face",
-  "Levi's", "Carhartt", "Ralph Lauren", "Tommy Hilfiger", "Vans"
-];
+import Newsletter from '@/components/Newsletter';
 
 const containerVariants = {
   hidden: {},
@@ -202,20 +198,8 @@ export default function ContactPage() {
         </motion.div>
       </div>
 
-      {/* Brands Marquee — mesh-cream themed */}
-      <div className="border-t border-brand-gold-soft/20 bg-mesh-cream py-6 overflow-hidden flex relative z-10">
-        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-brand-cream to-transparent z-10"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-brand-cream to-transparent z-10"></div>
-
-        <div className="flex whitespace-nowrap animate-marquee gap-16 items-center pr-16 text-brand-warm font-bold tracking-widest text-2xl sm:text-3xl uppercase opacity-25 hover:opacity-50 transition-opacity duration-300">
-          {/* Double the list for seamless infinite loop */}
-          {[...BRANDS, ...BRANDS].map((brand, i) => (
-            <span key={i} className="inline-block hover:text-brand-black transition-colors duration-300">
-              {brand}
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* Newsletter — moved here to keep the home page light */}
+      <Newsletter />
     </div>
   );
 }

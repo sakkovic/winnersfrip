@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ShoppingBag, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { cn, conditionLabel, conditionColor, maxCartQuantity } from '@/lib/utils';
+import { cn, maxCartQuantity } from '@/lib/utils';
 import ProductGallery from '@/components/ProductGallery';
 import type { Product } from '@/types';
 
@@ -82,9 +82,6 @@ export default function ProductDetailClient({ product }: Props) {
                 ) : (
                   <span className="text-2xl font-bold">{product.price} DT</span>
                 )}
-                <span className={cn('text-[10px] font-medium px-2 py-1 rounded-sm', conditionColor(product.condition))}>
-                  {conditionLabel(product.condition)}
-                </span>
               </div>
 
               <p className="text-sm text-gray-500 leading-relaxed">{product.description}</p>

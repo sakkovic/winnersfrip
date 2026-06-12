@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import HeroSection from '@/components/HeroSection';
 import CollectionSection from '@/components/CollectionSection';
 import BrandValues from '@/components/BrandValues';
-import Newsletter from '@/components/Newsletter';
 import ProductGrid from '@/components/ProductGrid';
+import ReviewsSection from '@/components/ReviewsSection';
 import { getCachedProducts } from '@/lib/products.server';
+import { getCachedReviews } from '@/lib/reviews.server';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
@@ -16,8 +17,10 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const allProducts = await getCachedProducts();
-  const newArrivals = allProducts.filter(p => p.isNewArrival).slice(0, 4);
+  const [allProducts, reviews] = await Promise.all([getCachedProducts(), getCachedReviews()]);
+  // Products come back newest-first from the cache, so the most recent additions
+  // are simply the first few.
+  const newArrivals = allProducts.slice(0, 4);
 
   return (
     <>
@@ -72,7 +75,7 @@ export default async function HomePage() {
 
       <BrandValues />
 
-      <Newsletter />
+      <ReviewsSection initialReviews={reviews} />
     </>
   );
 }

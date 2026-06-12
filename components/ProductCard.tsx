@@ -6,16 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { cn, conditionLabel, conditionColor } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { CATEGORY_LABELS } from '@/lib/constants';
 import type { Product } from '@/types';
 
 interface ProductCardProps {
   product: Product;
-  showCondition?: boolean;
+  showMeta?: boolean;
 }
 
-export default function ProductCard({ product, showCondition = true }: ProductCardProps) {
+export default function ProductCard({ product, showMeta = true }: ProductCardProps) {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const wishlisted = isWishlisted(product.id);
@@ -75,20 +75,10 @@ export default function ProductCard({ product, showCondition = true }: ProductCa
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
           <AnimatePresence>
-            {product.isNewArrival && (
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-brand-black text-white text-[9px] tracking-widest uppercase font-semibold px-2 py-1 shadow-sm"
-              >
-                Nouveau
-              </motion.span>
-            )}
             {product.isPromo && (
               <motion.span
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 }}
                 className="bg-red-600 text-white text-[9px] tracking-widest uppercase font-semibold px-2 py-1 shadow-sm"
               >
                 Promo
@@ -182,25 +172,13 @@ export default function ProductCard({ product, showCondition = true }: ProductCa
           </div>
         </div>
 
-        {showCondition && (
+        {/* Beauty items show their volume (e.g. 50ml); fashion items keep the
+            card clean with no extra meta badge. */}
+        {showMeta && product.department === 'beaute' && product.volume && (
           <div className="flex items-center gap-1.5 mt-0.5">
-            {/* For fashion items: condition badge. For beauty: volume badge. */}
-            {product.department === 'beaute' ? (
-              product.volume && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm w-fit bg-brand-cream text-brand-warm">
-                  {product.volume}
-                </span>
-              )
-            ) : (
-              <span
-                className={cn(
-                  'text-[10px] font-medium px-1.5 py-0.5 rounded-sm w-fit',
-                  conditionColor(product.condition),
-                )}
-              >
-                {conditionLabel(product.condition)}
-              </span>
-            )}
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm w-fit bg-brand-cream text-brand-warm">
+              {product.volume}
+            </span>
           </div>
         )}
       </div>

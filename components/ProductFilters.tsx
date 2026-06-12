@@ -5,14 +5,13 @@ import { X, ChevronDown, ChevronUp, Check, SlidersHorizontal } from 'lucide-reac
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
-  COLORS, CONDITIONS, GENDERS, STYLES, ORIGINS,
-  PRICE_RANGES, CLOTHING_SIZES, SHOE_SIZES, CONDITION_LABELS,
+  COLORS, GENDERS,
+  PRICE_RANGES, CLOTHING_SIZES, SHOE_SIZES,
   DEPARTMENTS, DEPARTMENT_LABELS, MODE_CATEGORIES, BEAUTE_CATEGORIES, CATEGORY_LABELS,
   type ColorEntry,
 } from '@/lib/constants';
 import type {
-  FilterState, ProductCategory, ProductCondition, ProductGender,
-  ProductStyle, ProductOrigin, ProductDepartment,
+  FilterState, ProductCategory, ProductGender, ProductDepartment,
 } from '@/types';
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
@@ -180,16 +179,16 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
   const showClothingSections = !beautyOnly;
 
   const visibleCategories: readonly ProductCategory[] = beautyOnly
-    ? BEAUTE_CATEGORIES
+    ? [...BEAUTE_CATEGORIES, 'autre']
     : modeOnly
-      ? MODE_CATEGORIES
-      : [...MODE_CATEGORIES, ...BEAUTE_CATEGORIES];
+      ? [...MODE_CATEGORIES, 'autre']
+      : [...MODE_CATEGORIES, ...BEAUTE_CATEGORIES, 'autre'];
 
   const activeCount =
-    filters.department.length + filters.category.length + filters.condition.length + filters.origin.length +
-    filters.gender.length + filters.style.length + filters.size.length +
+    filters.department.length + filters.category.length +
+    filters.gender.length + filters.size.length +
     filters.color.length + filters.priceRange.length +
-    (filters.promotions ? 1 : 0) + (filters.newArrivals ? 1 : 0);
+    (filters.promotions ? 1 : 0);
 
   const body = (
     <div className="flex flex-col h-full">
@@ -239,12 +238,7 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
         </div>
 
         {/* Quick toggles */}
-        <div className="py-3 border-b border-gray-100 space-y-2">
-          <CheckRow
-            label="Nouveautés"
-            checked={filters.newArrivals}
-            onChange={() => onChange({ ...filters, newArrivals: !filters.newArrivals })}
-          />
+        <div className="py-3 border-b border-gray-100">
           <CheckRow
             label="En promotion"
             checked={filters.promotions}
@@ -295,53 +289,25 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
           </div>
         </Section>
 
-        {/* Clothing-only sections */}
+        {/* Clothing-only section — sizes */}
         {showClothingSections && (
-          <>
-            <Section title="État" count={filters.condition.length}>
-              <div className="space-y-1">
-                {CONDITIONS.map((c) => (
-                  <CheckRow
-                    key={c}
-                    label={CONDITION_LABELS[c]}
-                    checked={filters.condition.includes(c)}
-                    onChange={() => toggle('condition', c as ProductCondition)}
-                  />
+          <Section title="Taille" count={filters.size.length}>
+            <div className="space-y-2.5">
+              <p className="text-[9px] tracking-widest uppercase text-gray-400">Vêtements</p>
+              <div className="flex flex-wrap gap-1.5">
+                {CLOTHING_SIZES.map((s) => (
+                  <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
                 ))}
               </div>
-            </Section>
-
-            <Section title="Style" count={filters.style.length}>
-              <div className="space-y-1">
-                {STYLES.map((s) => (
-                  <CheckRow
-                    key={s}
-                    label={s.charAt(0).toUpperCase() + s.slice(1)}
-                    checked={filters.style.includes(s)}
-                    onChange={() => toggle('style', s as ProductStyle)}
-                  />
+              <p className="text-[9px] tracking-widest uppercase text-gray-400 pt-1">Chaussures</p>
+              <div className="flex flex-wrap gap-1.5">
+                {SHOE_SIZES.map((s) => (
+                  <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
                 ))}
               </div>
-            </Section>
-
-            <Section title="Taille" count={filters.size.length}>
-              <div className="space-y-2.5">
-                <p className="text-[9px] tracking-widest uppercase text-gray-400">Vêtements</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {CLOTHING_SIZES.map((s) => (
-                    <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
-                  ))}
-                </div>
-                <p className="text-[9px] tracking-widest uppercase text-gray-400 pt-1">Chaussures</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {SHOE_SIZES.map((s) => (
-                    <SizePill key={s} size={s} selected={filters.size.includes(s)} onClick={() => toggle('size', s as string)} />
-                  ))}
-                </div>
-                <SizePill size="unique" selected={filters.size.includes('unique')} onClick={() => toggle('size', 'unique')} />
-              </div>
-            </Section>
-          </>
+              <SizePill size="unique" selected={filters.size.includes('unique')} onClick={() => toggle('size', 'unique')} />
+            </div>
+          </Section>
         )}
 
         {/* Couleurs */}
@@ -353,20 +319,6 @@ export default function ProductFilters({ filters, onChange, onReset, isMobileOpe
                 color={c}
                 selected={filters.color.includes(c.value)}
                 onClick={() => toggle('color', c.value as string)}
-              />
-            ))}
-          </div>
-        </Section>
-
-        {/* Origine */}
-        <Section title="Origine" count={filters.origin.length}>
-          <div className="space-y-1">
-            {ORIGINS.map((o) => (
-              <CheckRow
-                key={o}
-                label={o === 'europe' ? 'Europe' : 'Local'}
-                checked={filters.origin.includes(o)}
-                onChange={() => toggle('origin', o as ProductOrigin)}
               />
             ))}
           </div>

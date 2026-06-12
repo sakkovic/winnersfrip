@@ -1,4 +1,4 @@
-import type { ProductDepartment, ModeCategory, BeauteCategory } from '@/types';
+import type { ProductDepartment, ModeCategory, BeauteCategory, ProductCategory } from '@/types';
 
 export const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
 export const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] as const;
@@ -38,7 +38,19 @@ export const MODE_CATEGORIES = ['hauts', 'bas', 'robes', 'vestes', 'chaussures',
 
 export const BEAUTE_CATEGORIES = ['parfums', 'soins-visage', 'soins-corps', 'cheveux', 'maquillage'] as const satisfies readonly BeauteCategory[];
 
-export const CATEGORIES = [...MODE_CATEGORIES, ...BEAUTE_CATEGORIES] as const;
+// 'autre' is a shared catch-all available under both departments.
+export const CATEGORIES = [...MODE_CATEGORIES, ...BEAUTE_CATEGORIES, 'autre'] as const;
+
+/**
+ * Department a subcategory belongs to — used to auto-select Mode/Beauté from the
+ * chosen subcategory. Returns null for the shared 'autre' (ambiguous, the admin
+ * picks the department manually in that case).
+ */
+export const departmentForCategory = (c: ProductCategory): ProductDepartment | null => {
+  if ((BEAUTE_CATEGORIES as readonly ProductCategory[]).includes(c)) return 'beaute';
+  if ((MODE_CATEGORIES as readonly ProductCategory[]).includes(c)) return 'mode';
+  return null;
+};
 
 export const CATEGORY_LABELS: Record<string, string> = {
   hauts:          'Hauts',
@@ -52,18 +64,10 @@ export const CATEGORY_LABELS: Record<string, string> = {
   'soins-corps':  'Soins corps',
   cheveux:        'Cheveux',
   maquillage:     'Maquillage',
+  autre:          'Autre',
 };
 
-export const CONDITIONS = ['neuf', 'comme_neuf', 'seconde_main'] as const;
 export const GENDERS = ['femme', 'homme', 'unisexe'] as const;
-export const STYLES = ['streetwear', 'vintage', 'sport', 'chic', 'y2k', 'minimaliste'] as const;
-export const ORIGINS = ['europe', 'local'] as const;
-
-export const CONDITION_LABELS: Record<string, string> = {
-  neuf: 'Neuf',
-  comme_neuf: 'Comme Neuf',
-  seconde_main: 'Seconde Main',
-};
 
 export const PRICE_RANGES = [
   { value: '0-20',   label: '0 – 20 DT' },

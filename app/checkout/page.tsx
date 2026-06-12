@@ -26,10 +26,21 @@ function splitName(displayName: string | null | undefined) {
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
-  const { currentUser } = useAuth();
+  const { currentUser, resendVerification, refreshUser } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [acceptedRules, setAcceptedRules] = useState(false);
+  const [vSent, setVSent] = useState(false);
+  const [vChecking, setVChecking] = useState(false);
+
+  const needsVerification = !!currentUser && !currentUser.emailVerified;
+  const handleResendVerif = async () => {
+    try { await resendVerification(); setVSent(true); } catch { /* rate-limited */ }
+  };
+  const handleCheckVerif = async () => {
+    setVChecking(true);
+    try { await refreshUser(); } catch { /* ignore */ } finally { setVChecking(false); }
+  };
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -79,6 +90,11 @@ export default function CheckoutPage() {
     // (the firestore rule enforces request.resource.data.userId == auth.uid).
     if (!currentUser) {
       toast.error('Connectez-vous pour envoyer une réservation.');
+      return;
+    }
+
+    if (!currentUser.emailVerified) {
+      toast.error('Vérifiez votre email avant de réserver.');
       return;
     }
 
@@ -355,7 +371,7 @@ export default function CheckoutPage() {
             <button
               type="submit"
               suppressHydrationWarning
-              disabled={submitting || !acceptedRules || !currentUser}
+              disabled={submitting || !acceptedRules || !currentUser || needsVerification}
               className="w-full bg-brand-black text-white text-xs font-bold tracking-widest uppercase py-4 hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting && <Loader2 size={13} className="animate-spin" />}
@@ -370,6 +386,35 @@ export default function CheckoutPage() {
                 </Link>
                 .
               </p>
+            )}
+
+            {needsVerification && (
+              <div className="bg-amber-50 border border-amber-200 p-4 text-left">
+                <p className="text-sm font-semibold text-amber-800">Vérifiez votre email pour réserver</p>
+                <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                  Un lien de vérification a été envoyé à <span className="font-medium break-all">{currentUser?.email}</span>.
+                  Cliquez-le (pensez aux spams), puis revenez ici.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                  <button
+                    type="button"
+                    onClick={handleResendVerif}
+                    disabled={vSent}
+                    className="inline-flex items-center gap-1.5 bg-amber-600 text-white text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded hover:bg-amber-700 transition-colors disabled:opacity-60"
+                  >
+                    {vSent ? 'Email renvoyé ✓' : 'Renvoyer l’email'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCheckVerif}
+                    disabled={vChecking}
+                    className="inline-flex items-center gap-1.5 border border-amber-300 text-amber-800 text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded hover:bg-amber-100 transition-colors disabled:opacity-60"
+                  >
+                    {vChecking && <Loader2 size={12} className="animate-spin" />}
+                    J&apos;ai vérifié
+                  </button>
+                </div>
+              </div>
             )}
 
             <p className="text-[11px] text-gray-400 text-center leading-relaxed">
@@ -413,7 +458,7 @@ export default function CheckoutPage() {
 
               <div className="mt-6 pt-6 border-t border-gray-200 flex items-start gap-2.5 text-[11px] text-gray-500 leading-relaxed">
                 <MapPin size={12} className="text-brand-warm flex-shrink-0 mt-0.5" />
-                <span>Winners Superfrip · QRFJ+J5R, Monastir, Tunisie</span>
+                <span>{BOUTIQUE.address}</span>
               </div>
             </div>
           </div>

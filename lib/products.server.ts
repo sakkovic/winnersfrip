@@ -1,46 +1,38 @@
 import { collection, getDocs, getFirestore } from 'firebase/firestore/lite';
 import { unstable_cache } from 'next/cache';
 import app from '@/lib/firebase';
-import { products as staticProducts } from '@/data/products';
 import type { Product } from '@/types';
 
-/**
- * Server-side function to fetch all products from Firestore.
- * Fallbacks to the static catalog if Firestore is unreachable or unseeded.
- */
+const toMillis = (v: unknown): number =>
+  v && typeof (v as { toMillis?: () => number }).toMillis === 'function'
+    ? (v as { toMillis: () => number }).toMillis()
+    : 0;
+
 const fetchAllProducts = async (): Promise<Product[]> => {
   try {
     const fdb = getFirestore(app);
     const snap = await getDocs(collection(fdb, 'products'));
-    
-    if (!snap.empty) {
-      return snap.docs.map((d) => {
-        // Strip Firestore Timestamps (createdAt / updatedAt) — they're not part
-        // of the Product type and aren't serializable to the client component.
-        const { createdAt, updatedAt, ...rest } = d.data();
+    return snap.docs
+      .map((d) => {
+        const data = d.data();
+        const createdAtMs = toMillis(data.createdAt);
+        const { createdAt, updatedAt, ...rest } = data;
         void createdAt; void updatedAt;
-        const plain = JSON.parse(JSON.stringify(rest));
-        return { id: d.id, ...plain } as Product;
-      });
-    }
+        const product = { id: d.id, ...JSON.parse(JSON.stringify(rest)) } as Product;
+        return { product, createdAtMs };
+      })
+      // Newest first — drives the homepage "Nouvelles Arrivées" and the shop's
+      // default "Plus récents" sort without needing a manual flag per product.
+      .sort((a, b) => b.createdAtMs - a.createdAtMs)
+      .map((r) => r.product);
   } catch (error) {
-    console.error('Firestore fetch failed, using static fallback:', error);
+    console.error('Firestore fetch failed:', error);
+    return [];
   }
-  
-  return staticProducts;
 };
 
-/**
- * Cached version of fetchAllProducts for ISR.
- * Revalidates every 60 seconds.
- */
 export const getCachedProducts = unstable_cache(
-  async () => {
-    return fetchAllProducts();
-  },
+  fetchAllProducts,
   ['all-products-cache'],
-  {
-    revalidate: 60,
-    tags: ['products'],
-  }
+  { revalidate: 60, tags: ['products'] }
 );

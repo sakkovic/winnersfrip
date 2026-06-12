@@ -6,9 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   type User as FirebaseUser,
 } from 'firebase/auth';
@@ -23,6 +22,7 @@ interface AuthUser {
   displayName: string | null;
   photoURL: string | null;
   role: 'admin' | 'client';
+  emailVerified: boolean;
 }
 
 interface AuthContextValue {
@@ -30,9 +30,12 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  /** Re-send the email-verification link to the signed-in user. */
+  resendVerification: () => Promise<void>;
+  /** Reload the Firebase user (e.g. after they click the verification link). */
+  refreshUser: () => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -84,21 +87,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const buildAuthUser = async (user: FirebaseUser): Promise<AuthUser> => {
+    const role = await resolveRole(user);
+    await ensureUserDoc(user, role);
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      role,
+      emailVerified: user.emailVerified,
+    };
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const role = await resolveRole(user);
-        await ensureUserDoc(user, role);
-        setCurrentUser({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          role,
-        });
-      } else {
-        setCurrentUser(null);
-      }
+      setCurrentUser(user ? await buildAuthUser(user) : null);
       setLoading(false);
     });
     return unsub;
@@ -112,6 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     if (name) await updateProfile(user, { displayName: name });
     const role: 'admin' | 'client' = email === ADMIN_EMAIL ? 'admin' : 'client';
+    // Send the email-verification link. Non-fatal: account still works if it fails.
+    try {
+      await sendEmailVerification(user);
+    } catch {
+      /* Soft fail — user can resend from the account page. */
+    }
     try {
       await setDoc(doc(db, 'users', user.uid), {
         name,
@@ -124,23 +134,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    await signInWithPopup(auth, provider);
-  };
-
   const logout = async () => signOut(auth);
   const resetPassword = async (email: string) => sendPasswordResetEmail(auth, email);
+
+  const resendVerification = async () => {
+    if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+  };
+
+  const refreshUser = async () => {
+    if (!auth.currentUser) return;
+    await auth.currentUser.reload();
+    if (auth.currentUser) setCurrentUser(await buildAuthUser(auth.currentUser));
+  };
 
   const value: AuthContextValue = {
     currentUser,
     loading,
     login,
     signup,
-    loginWithGoogle,
     logout,
     resetPassword,
+    resendVerification,
+    refreshUser,
     isAdmin: currentUser?.role === 'admin',
   };
 

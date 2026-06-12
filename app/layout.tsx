@@ -3,6 +3,7 @@ import { Inter, Cairo, Fraunces } from 'next/font/google';
 import './globals.css';
 import Providers from '@/components/Providers';
 import Navbar from '@/components/Navbar';
+import BrandsMarquee from '@/components/BrandsMarquee';
 import Footer from '@/components/Footer';
 
 const inter = Inter({
@@ -40,6 +41,12 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'fr_TN',
     siteName: 'Winners Mode',
+    images: [{ url: '/logo.png', width: 1200, height: 545, alt: 'Winners Mode' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Winners Mode — Mode & Beauté',
+    images: ['/logo.png'],
   },
 };
 
@@ -50,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <Navbar />
           <main className="pt-[92px]">{children}</main>
+          <BrandsMarquee />
           <Footer />
         </Providers>
       </body>

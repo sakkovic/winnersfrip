@@ -98,7 +98,34 @@ export default function AdminReservationsPage() {
     try {
       const q = query(collection(db, 'reservations'), orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
-      setReservations(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reservation)));
+      // Normalize at the boundary: a single malformed document (missing items,
+      // unknown status, etc.) must never crash the whole admin page during
+      // render. Coerce every field to a safe, expected shape here.
+      const KNOWN_STATUSES: Reservation['status'][] = [
+        'pending', 'confirmed', 'cancelled', 'completed', 'expired',
+      ];
+      setReservations(
+        snap.docs.map((d) => {
+          const data = d.data() as Partial<Reservation>;
+          return {
+            id: d.id,
+            userId: data.userId ?? '',
+            firstName: data.firstName ?? '',
+            lastName: data.lastName ?? '',
+            phone: data.phone ?? '',
+            email: data.email ?? null,
+            notes: data.notes ?? null,
+            visitDay: data.visitDay ?? null,
+            items: Array.isArray(data.items) ? data.items : [],
+            total: typeof data.total === 'number' ? data.total : 0,
+            status: KNOWN_STATUSES.includes(data.status as Reservation['status'])
+              ? (data.status as Reservation['status'])
+              : 'pending',
+            pickupDeadline: data.pickupDeadline ?? null,
+            createdAt: data.createdAt ?? null,
+          } as Reservation;
+        }),
+      );
     } catch (err) {
       console.error('fetchReservations failed', err);
       const msg = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -296,7 +323,7 @@ export default function AdminReservationsPage() {
         ) : (
           <ul className="space-y-3">
             {displayed.map((r) => {
-              const meta = STATUS_META[r.status];
+              const meta = STATUS_META[r.status] ?? STATUS_META.pending;
               const remaining = daysLeft(r.pickupDeadline);
               const isOverdue = r.status === 'expired';
 

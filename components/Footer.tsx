@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Instagram, Facebook, Twitter } from 'lucide-react';
+import { Instagram, Facebook, Check, Loader2 } from 'lucide-react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Column 1 — Boutique : top-level destinations
 const shopLinks = [
@@ -9,13 +12,6 @@ const shopLinks = [
   { href: '/shop?department=mode',   label: 'Mode' },
   { href: '/shop?department=beaute', label: 'Beauté' },
   { href: '/shop?category=parfums',  label: 'Parfums' },
-];
-
-// Column 2 — Catégories : narrower beauty subsections
-const categoryLinks = [
-  { href: '/shop?category=soins-visage', label: 'Soins visage' },
-  { href: '/shop?category=cheveux',      label: 'Cheveux' },
-  { href: '/shop?new=true',              label: 'Nouveautés' },
 ];
 
 const helpLinks = [
@@ -53,6 +49,27 @@ function ColumnLinks({
 }
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState<'idle' | 'loading' | 'done'>('idle');
+
+  const submitNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (state !== 'idle' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
+    setState('loading');
+    try {
+      await addDoc(collection(db, 'newsletter_signups'), {
+        email: trimmed,
+        createdAt: serverTimestamp(),
+        source: 'footer',
+      });
+      setState('done');
+    } catch {
+      // Soft fail — re-enable so the user can retry.
+      setState('idle');
+    }
+  };
+
   return (
     <footer className="relative bg-brand-black text-white overflow-hidden">
       {/* Decorative gold lines */}
@@ -60,7 +77,7 @@ export default function Footer() {
       <div className="absolute -top-32 right-1/4 w-80 h-80 rounded-full bg-brand-warm/10 blur-3xl pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {/* Brand */}
           <div className="col-span-1 lg:col-span-2 flex flex-col items-center sm:items-start text-center sm:text-left">
             <span className="font-display text-lg tracking-tight block mb-2">
@@ -71,13 +88,12 @@ export default function Footer() {
             </p>
             <div className="flex items-center justify-center sm:justify-start gap-2.5">
               {[
-                { Icon: Instagram, label: 'Instagram' },
-                { Icon: Facebook,  label: 'Facebook'  },
-                { Icon: Twitter,   label: 'Twitter'   },
-              ].map(({ Icon, label }) => (
+                { Icon: Instagram, label: 'Instagram', href: 'https://instagram.com/winners.mode' },
+                { Icon: Facebook,  label: 'Facebook',  href: 'https://facebook.com/winners.mode' },
+              ].map(({ Icon, label, href }) => (
                 <a
                   key={label}
-                  href={label === 'Instagram' ? 'https://instagram.com/winners.mode' : label === 'Facebook' ? 'https://facebook.com/winners.mode' : '#'}
+                  href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
@@ -91,8 +107,7 @@ export default function Footer() {
           </div>
 
           {/* Link columns */}
-          <ColumnLinks title="Boutique"   links={shopLinks} />
-          <ColumnLinks title="Catégories" links={categoryLinks} />
+          <ColumnLinks title="Boutique" links={shopLinks} />
 
           {/* Aide + Newsletter combined column */}
           <div className="hidden sm:block col-span-2 sm:col-span-2 lg:col-span-1">
@@ -116,22 +131,36 @@ export default function Footer() {
             <h4 className="text-[10px] sm:text-xs tracking-[0.25em] uppercase font-semibold mb-2 text-brand-gold-soft">
               Newsletter
             </h4>
-            <form className="flex gap-1.5" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="votre@email.com"
-                suppressHydrationWarning
-                className="flex-1 bg-white/10 text-white placeholder-gray-500 text-xs px-2.5 py-2 outline-none focus:bg-white/15 focus:ring-1 focus:ring-brand-gold-soft transition-all min-w-0"
-              />
-              <button
-                type="submit"
-                suppressHydrationWarning
-                className="group relative overflow-hidden bg-white text-brand-black text-[10px] font-semibold tracking-wider uppercase px-2.5 py-2 whitespace-nowrap flex-shrink-0"
-              >
-                <span className="absolute inset-0 bg-brand-gold-soft -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-expo-out" />
-                <span className="relative z-10">OK</span>
-              </button>
-            </form>
+            {state === 'done' ? (
+              <p className="flex items-center gap-2 text-xs text-brand-gold-soft">
+                <Check size={13} strokeWidth={2.5} /> Merci, vous êtes inscrit(e).
+              </p>
+            ) : (
+              <form className="flex gap-1.5" onSubmit={submitNewsletter}>
+                <label htmlFor="footer-newsletter" className="sr-only">Adresse email</label>
+                <input
+                  id="footer-newsletter"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  suppressHydrationWarning
+                  className="flex-1 bg-white/10 text-white placeholder-gray-500 text-xs px-2.5 py-2 outline-none focus:bg-white/15 focus:ring-1 focus:ring-brand-gold-soft transition-all min-w-0"
+                />
+                <button
+                  type="submit"
+                  disabled={state === 'loading'}
+                  suppressHydrationWarning
+                  className="group relative overflow-hidden bg-white text-brand-black text-[10px] font-semibold tracking-wider uppercase px-2.5 py-2 whitespace-nowrap flex-shrink-0 disabled:opacity-60"
+                >
+                  <span className="absolute inset-0 bg-brand-gold-soft -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-expo-out" />
+                  <span className="relative z-10 flex items-center">
+                    {state === 'loading' ? <Loader2 size={12} className="animate-spin" /> : 'OK'}
+                  </span>
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

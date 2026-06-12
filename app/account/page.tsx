@@ -4,16 +4,20 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { User, ShoppingBag, Heart, LogOut, Shield, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { User, ShoppingBag, Heart, LogOut, Shield, ChevronRight, AlertCircle, Loader2, Check } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 
 export default function AccountPage() {
-  const { currentUser, logout, isAdmin } = useAuth();
+  const { currentUser, logout, isAdmin, resendVerification, refreshUser } = useAuth();
   const { cart } = useCart();
   const { wishlistCount } = useWishlist();
   const router = useRouter();
+
+  const [vSent, setVSent] = useState(false);
+  const [vChecking, setVChecking] = useState(false);
 
   useEffect(() => {
     if (!currentUser) router.push('/login');
@@ -24,6 +28,14 @@ export default function AccountPage() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
+  };
+
+  const handleResend = async () => {
+    try { await resendVerification(); setVSent(true); } catch { /* rate-limited */ }
+  };
+  const handleCheckVerified = async () => {
+    setVChecking(true);
+    try { await refreshUser(); } catch { /* ignore */ } finally { setVChecking(false); }
   };
 
   const stats = [
@@ -67,6 +79,37 @@ export default function AccountPage() {
               )}
             </div>
           </div>
+
+          {/* Email verification banner */}
+          {!currentUser.emailVerified && (
+            <div className="bg-amber-50 border border-amber-200 p-4 mb-4 flex items-start gap-3">
+              <AlertCircle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800">Email non vérifié</p>
+                <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                  Confirmez votre adresse <span className="font-medium break-all">{currentUser.email}</span> :
+                  vérifiez votre boîte mail (et vos spams) puis cliquez le lien reçu.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                  <button
+                    onClick={handleResend}
+                    disabled={vSent}
+                    className="inline-flex items-center gap-1.5 bg-amber-600 text-white text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded hover:bg-amber-700 transition-colors disabled:opacity-60"
+                  >
+                    {vSent ? <><Check size={12} /> Email renvoyé</> : 'Renvoyer l’email'}
+                  </button>
+                  <button
+                    onClick={handleCheckVerified}
+                    disabled={vChecking}
+                    className="inline-flex items-center gap-1.5 border border-amber-300 text-amber-800 text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded hover:bg-amber-100 transition-colors disabled:opacity-60"
+                  >
+                    {vChecking ? <Loader2 size={12} className="animate-spin" /> : null}
+                    J&apos;ai vérifié
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 mb-4">

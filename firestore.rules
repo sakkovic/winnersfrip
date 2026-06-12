@@ -52,6 +52,19 @@ service cloud.firestore {
           && request.resource.data.category is string;
     }
 
+    function isReviewPayload() {
+      return request.resource.data.rating is number
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.userName is string
+          && request.resource.data.userName.size() > 0
+          && request.resource.data.userName.size() <= 80
+          && (!('comment' in request.resource.data)
+              || (request.resource.data.comment is string
+                  && request.resource.data.comment.size() <= 1000));
+    }
+
     function isReservationPayload() {
       return request.resource.data.keys().hasAll(['phone', 'items', 'createdAt'])
           && request.resource.data.phone is string
@@ -120,6 +133,28 @@ service cloud.firestore {
                     );
 
       allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // /reviews/{uid} — boutique testimonials (doc id == author uid → 1/user)
+    // -------------------------------------------------------------------------
+    match /reviews/{reviewId} {
+      // Published reviews are public; admin can read everything (incl. hidden).
+      allow read:   if resource.data.status == 'published' || isAdmin();
+      // A signed-in user writes their OWN review (id must equal their uid),
+      // published immediately. Cannot post on behalf of someone else.
+      allow create: if isSignedIn()
+                    && reviewId == request.auth.uid
+                    && isReviewPayload()
+                    && request.resource.data.status == 'published';
+      // Owner edits their own rating/comment but cannot change the status
+      // (can't un-hide a review the admin hid). Admin can change anything.
+      allow update: if isAdmin()
+                    || (isSignedIn()
+                        && reviewId == request.auth.uid
+                        && isReviewPayload()
+                        && request.resource.data.status == resource.data.status);
+      allow delete: if isAdmin() || (isSignedIn() && reviewId == request.auth.uid);
     }
 
     // -------------------------------------------------------------------------

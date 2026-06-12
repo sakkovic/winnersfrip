@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { doc, getDoc, getFirestore } from 'firebase/firestore/lite';
 import app from '@/lib/firebase';
-import { getProductById, getRelatedProducts, products } from '@/data/products';
+import { getCachedProducts } from '@/lib/products.server';
 import ProductDetailClient from './ProductDetailClient';
 import ProductGrid from '@/components/ProductGrid';
 import type { Product } from '@/types';
@@ -22,33 +22,23 @@ export const dynamicParams = true;
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  // Pre-render the known seed catalog for fast first loads + SEO. New products
-  // are rendered on demand thanks to dynamicParams.
-  return products.map((p) => ({ id: p.id }));
+  const all = await getCachedProducts();
+  return all.map((p) => ({ id: p.id }));
 }
 
 async function fetchProduct(id: string): Promise<Product | null> {
-  // Firestore is the source of truth for live management. We read with the
-  // lightweight `firebase/firestore/lite` SDK (no realtime listeners) since
-  // this runs on the server.
   try {
     const fdb = getFirestore(app);
     const snap = await getDoc(doc(fdb, 'products', id));
     if (snap.exists()) {
-      // Strip Firestore Timestamps (createdAt / updatedAt) — they're not part
-      // of the Product type and aren't serializable to the client component.
       const { createdAt: _c, updatedAt: _u, ...rest } = snap.data() as Record<string, unknown>;
       void _c; void _u;
-      const plain = JSON.parse(JSON.stringify(rest));
-      return { id: snap.id, ...plain } as Product;
+      return { id: snap.id, ...JSON.parse(JSON.stringify(rest)) } as Product;
     }
   } catch (error) {
-    // Network / unseeded / offline build → fall through to the static seed so
-    // the page still renders. Once Firestore is seeded it wins.
-    console.error(`Firestore fetch failed for ${id}, using static fallback:`, error);
+    console.error(`Firestore fetch failed for product ${id}:`, error);
   }
-
-  return getProductById(id) ?? null;
+  return null;
 }
 
 
@@ -90,8 +80,10 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound();
 
-  // Related products: from local catalog (same category/gender)
-  const related = getRelatedProducts(product, 4);
+  const allProducts = await getCachedProducts();
+  const related = allProducts
+    .filter((p) => p.id !== product.id && (p.category === product.category || p.gender === product.gender))
+    .slice(0, 4);
 
   // Google-rich-result-friendly Product JSON-LD.  Prices in TND; availability
   // mirrors the boutique reality (in-stock if a single unit remains).
@@ -113,10 +105,7 @@ export default async function ProductPage({ params }: Props) {
         stockMax > 0
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
-      itemCondition:
-        product.condition === 'neuf'
-          ? 'https://schema.org/NewCondition'
-          : 'https://schema.org/UsedCondition',
+      itemCondition: 'https://schema.org/NewCondition',
     },
   };
 

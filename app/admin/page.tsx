@@ -8,23 +8,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, Trash2, X, Check, Shield, Package,
-  Star, Loader2, Search, RefreshCw,
-  ExternalLink, Sparkles, Tag, AlertCircle, Upload, ImageIcon,
-  Database,
+  Loader2, Search, RefreshCw,
+  ExternalLink, Tag, AlertCircle, Upload, ImageIcon,
 } from 'lucide-react';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
-  setDoc, writeBatch,
+  deleteField,
 } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import {
-  CATEGORIES, CONDITIONS, GENDERS, STYLES, ORIGINS,
-  COLORS, CLOTHING_SIZES, SHOE_SIZES, CONDITION_LABELS,
+  CATEGORIES, GENDERS, MODE_CATEGORIES, BEAUTE_CATEGORIES,
+  COLORS, CLOTHING_SIZES, SHOE_SIZES,
+  DEPARTMENTS, DEPARTMENT_LABELS, CATEGORY_LABELS, departmentForCategory,
 } from '@/lib/constants';
-import { products as catalogProducts } from '@/data/products';
 import type { Product, ProductCategory } from '@/types';
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
@@ -44,9 +43,7 @@ const EMPTY_FORM: FormData = {
   name: '', department: 'mode', category: 'hauts', gender: 'unisexe',
   price: 0, promoPrice: undefined, isPromo: false, currency: 'DT',
   images: [], colors: [], sizes: [],
-  condition: 'seconde_main', origin: 'europe', style: 'streetwear',
-  description: '', material: '', brand: '', volume: '',
-  isNewArrival: false, isFeatured: false,
+  description: '', brand: '', volume: '',
   stockQuantity: 1,
 };
 
@@ -406,34 +403,58 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <FieldLabel>Catégorie</FieldLabel>
-                    <select className={selectCls} value={form.category} onChange={(e) => set('category', e.target.value as FormData['category'])}>
-                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <select
+                      className={selectCls}
+                      value={form.category}
+                      onChange={(e) => {
+                        const cat = e.target.value as ProductCategory;
+                        const dept = departmentForCategory(cat);
+                        // Known category → set its rayon automatically.
+                        // 'Autre' is ambiguous → keep the current rayon (the admin
+                        // confirms it with the Mode/Beauté buttons below).
+                        setForm((f) => ({ ...f, category: cat, department: dept ?? f.department }));
+                      }}
+                    >
+                      <optgroup label="Mode">
+                        {MODE_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>)}
+                      </optgroup>
+                      <optgroup label="Beauté">
+                        {BEAUTE_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>)}
+                      </optgroup>
+                      <option value="autre">Autre</option>
                     </select>
+
+                    {/* Rayon — auto for known categories, manual choice for "Autre" */}
+                    {form.category === 'autre' ? (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-400">Rayon :</span>
+                        {DEPARTMENTS.map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => set('department', d)}
+                            className={cn(
+                              'text-[10px] font-medium px-2 py-0.5 border transition-colors',
+                              form.department === d
+                                ? 'bg-brand-black text-white border-brand-black'
+                                : 'border-gray-200 text-gray-500 hover:border-gray-400',
+                            )}
+                          >
+                            {DEPARTMENT_LABELS[d]}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-1.5 text-[10px] text-gray-400">
+                        Rayon : <span className="font-medium text-gray-600">{DEPARTMENT_LABELS[form.department]}</span>
+                        <span className="text-gray-300"> (automatique)</span>
+                      </p>
+                    )}
                   </div>
                   <div>
                     <FieldLabel>Genre</FieldLabel>
                     <select className={selectCls} value={form.gender} onChange={(e) => set('gender', e.target.value as FormData['gender'])}>
                       {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <FieldLabel>État</FieldLabel>
-                    <select className={selectCls} value={form.condition} onChange={(e) => set('condition', e.target.value as FormData['condition'])}>
-                      {CONDITIONS.map((c) => <option key={c} value={c}>{CONDITION_LABELS[c]}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <FieldLabel>Origine</FieldLabel>
-                    <select className={selectCls} value={form.origin} onChange={(e) => set('origin', e.target.value as FormData['origin'])}>
-                      {ORIGINS.map((o) => <option key={o} value={o}>{o === 'europe' ? 'Europe' : 'Local'}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <FieldLabel>Style</FieldLabel>
-                    <select className={selectCls} value={form.style} onChange={(e) => set('style', e.target.value as FormData['style'])}>
-                      {STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>
@@ -531,35 +552,16 @@ function ProductForm({ initial, onClose, onSave, saving }: ProductFormProps) {
             </FormSection>
 
             {/* Description */}
-            <FormSection title="Description & Composition">
-              <div className="space-y-4">
-                <div>
-                  <FieldLabel required>Description</FieldLabel>
-                  <textarea
-                    className={cn(inputCls, 'h-20 resize-none', errors.description && 'border-red-300')}
-                    value={form.description}
-                    onChange={(e) => set('description', e.target.value)}
-                    placeholder="Décrivez le produit : état, style, particularités..."
-                  />
-                  <ErrMsg field="description" />
-                </div>
-                <div>
-                  <FieldLabel>Composition / Matière</FieldLabel>
-                  <input
-                    className={inputCls}
-                    value={form.material ?? ''}
-                    onChange={(e) => set('material', e.target.value)}
-                    placeholder="Ex : 100% Cotton, 80% Polyester…"
-                  />
-                </div>
-              </div>
-            </FormSection>
-
-            {/* Options */}
-            <FormSection title="Options & Visibilité">
-              <div className="grid grid-cols-2 gap-3">
-                <Toggle checked={!!form.isNewArrival} onChange={() => set('isNewArrival', !form.isNewArrival)} label="Nouvelle arrivée" />
-                <Toggle checked={!!form.isFeatured}   onChange={() => set('isFeatured', !form.isFeatured)}     label="En vedette" />
+            <FormSection title="Description">
+              <div>
+                <FieldLabel required>Description</FieldLabel>
+                <textarea
+                  className={cn(inputCls, 'h-20 resize-none', errors.description && 'border-red-300')}
+                  value={form.description}
+                  onChange={(e) => set('description', e.target.value)}
+                  placeholder="Décrivez le produit : particularités, coupe, détails…"
+                />
+                <ErrMsg field="description" />
               </div>
             </FormSection>
           </div>
@@ -618,13 +620,12 @@ export default function AdminPage() {
   const [fetching, setFetching]     = useState(true);
   const [search, setSearch]         = useState('');
   const [catFilter, setCatFilter]   = useState<ProductCategory | 'all'>('all');
-  const [statusFilter, setStatus]   = useState<'all' | 'promo' | 'new' | 'featured'>('all');
+  const [statusFilter, setStatus]   = useState<'all' | 'promo'>('all');
   const [formOpen, setFormOpen]     = useState(false);
   const [editTarget, setEditTarget] = useState<(Partial<FormData> & { id?: string }) | null>(null);
   const [saving, setSaving]         = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting]     = useState<string | null>(null);
-  const [seeding, setSeeding]       = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!currentUser || !isAdmin)) router.push('/login');
@@ -653,12 +654,27 @@ export default function AdminPage() {
   const handleSave = async (data: FormData, id?: string) => {
     setSaving(true);
     try {
-      const payload = { ...data, slug: slugify(data.name), updatedAt: serverTimestamp() };
+      // promoPrice is `undefined` whenever there's no active promo, and Firestore
+      // rejects undefined values. Pull it out and handle it explicitly: write the
+      // number when there's a promo, otherwise omit it (create) or clear it
+      // (update, via deleteField) so an old promo can't linger.
+      const { promoPrice, ...rest } = data;
+      const hasPromo = data.isPromo && typeof promoPrice === 'number';
+      // department + category are chosen explicitly in the form (and kept
+      // consistent there), so persist them as-is.
+      const base = { ...rest, slug: slugify(data.name), updatedAt: serverTimestamp() };
       if (id) {
-        await updateDoc(doc(db, 'products', id), payload);
+        await updateDoc(doc(db, 'products', id), {
+          ...base,
+          promoPrice: hasPromo ? promoPrice : deleteField(),
+        });
         toast.success('Produit mis à jour.');
       } else {
-        await addDoc(collection(db, 'products'), { ...payload, createdAt: serverTimestamp() });
+        await addDoc(collection(db, 'products'), {
+          ...base,
+          ...(hasPromo ? { promoPrice } : {}),
+          createdAt: serverTimestamp(),
+        });
         toast.success('Produit ajouté.');
       }
       await fetchProducts();
@@ -689,41 +705,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleSeedCatalog = async () => {
-    if (seeding) return;
-    const ok = window.confirm(
-      `Importer ${catalogProducts.length} produits depuis le catalogue local vers Firestore ?\n\nLes produits existants (même ID) seront écrasés.`,
-    );
-    if (!ok) return;
-
-    setSeeding(true);
-    try {
-      // Firestore batches max 500 writes; chunk just in case.
-      const chunkSize = 400;
-      let written = 0;
-      for (let i = 0; i < catalogProducts.length; i += chunkSize) {
-        const batch = writeBatch(db);
-        for (const p of catalogProducts.slice(i, i + chunkSize)) {
-          const { id, ...rest } = p;
-          batch.set(doc(db, 'products', id), {
-            ...rest,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        await batch.commit();
-        written += Math.min(chunkSize, catalogProducts.length - i);
-      }
-      toast.success(`${written} produits importés.`);
-      await fetchProducts();
-    } catch (err) {
-      console.error(err);
-      toast.error('Échec de l\'import. Voir la console.');
-    } finally {
-      setSeeding(false);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     setDeleting(id);
     try {
@@ -751,9 +732,7 @@ export default function AdminPage() {
   // Filtering
   const displayed = products.filter((p) => {
     if (catFilter !== 'all' && p.category !== catFilter) return false;
-    if (statusFilter === 'promo'      && !p.isPromo)     return false;
-    if (statusFilter === 'new'        && !p.isNewArrival)return false;
-    if (statusFilter === 'featured'   && !p.isFeatured)  return false;
+    if (statusFilter === 'promo' && !p.isPromo) return false;
     if (search) {
       const q = search.toLowerCase();
       const haystack = [
@@ -769,10 +748,8 @@ export default function AdminPage() {
 
   // Stats
   const stats = {
-    total:    products.length,
-    new:      products.filter((p) => p.isNewArrival).length,
-    featured: products.filter((p) => p.isFeatured).length,
-    promo:    products.filter((p) => p.isPromo).length,
+    total: products.length,
+    promo: products.filter((p) => p.isPromo).length,
   };
 
   return (
@@ -781,35 +758,35 @@ export default function AdminPage() {
       {/* Sticky top bar — sits flush under the global navbar (28 px announcement + 64 px nav) */}
       <div className="bg-white border-b border-gray-100 sticky top-[92px] z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Shield size={16} strokeWidth={1.5} className="text-brand-black" />
-            <h1 className="text-xs font-bold tracking-widest uppercase">Administration</h1>
-            <span className="text-xs text-gray-400 hidden sm:inline">— {products.length} produit{products.length !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-1">
+            <Shield size={16} strokeWidth={1.5} className="text-brand-black flex-shrink-0" />
+            <h1 className="text-xs font-bold tracking-widest uppercase flex-shrink-0">Administration</h1>
+            <span className="text-xs text-gray-400 hidden sm:inline flex-shrink-0">— {products.length} produit{products.length !== 1 ? 's' : ''}</span>
+            <Link
+              href="/admin/clients"
+              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors inline-flex items-center gap-1.5 flex-shrink-0"
+            >
+              <span>Clients</span>
+              <span className="text-gray-300">→</span>
+            </Link>
             <Link
               href="/admin/reservations"
-              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors hidden sm:inline-flex items-center gap-1.5"
+              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors inline-flex items-center gap-1.5 flex-shrink-0"
             >
               <span>Réservations</span>
+              <span className="text-gray-300">→</span>
+            </Link>
+            <Link
+              href="/admin/avis"
+              className="ml-3 text-[11px] font-bold tracking-widest uppercase text-gray-400 hover:text-brand-black transition-colors inline-flex items-center gap-1.5 flex-shrink-0"
+            >
+              <span>Avis</span>
               <span className="text-gray-300">→</span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={fetchProducts} title="Actualiser" className="p-2 text-gray-400 hover:text-brand-black transition-colors">
               <RefreshCw size={14} className={fetching ? 'animate-spin' : ''} />
-            </button>
-            <button
-              onClick={handleSeedCatalog}
-              disabled={seeding}
-              title={`Importer ${catalogProducts.length} produits du catalogue local vers Firestore`}
-              className={cn(
-                'flex items-center gap-1.5 border text-[11px] font-bold tracking-widest uppercase px-3 py-2 transition-colors',
-                seeding
-                  ? 'border-gray-200 text-gray-300 cursor-wait'
-                  : 'border-brand-gold-soft text-brand-warm hover:bg-brand-cream',
-              )}
-            >
-              {seeding ? <Loader2 size={13} className="animate-spin" /> : <Database size={13} />}
-              <span className="hidden sm:inline">{seeding ? 'Import…' : 'Importer catalogue'}</span>
             </button>
             <button
               onClick={() => { setEditTarget(null); setFormOpen(true); }}
@@ -826,12 +803,10 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
         {/* Stats strip — clickable to filter */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {([
-            { key: 'total',    label: 'Total',      color: 'bg-gray-900 text-white',    filter: 'all'      as const },
-            { key: 'new',      label: 'Nouveautés', color: 'bg-blue-600 text-white',    filter: 'new'      as const },
-            { key: 'featured', label: 'En vedette', color: 'bg-purple-600 text-white',  filter: 'featured' as const },
-            { key: 'promo',    label: 'Promos',     color: 'bg-red-600 text-white',     filter: 'promo'    as const },
+            { key: 'total', label: 'Total',  color: 'bg-gray-900 text-white', filter: 'all'   as const },
+            { key: 'promo', label: 'Promos', color: 'bg-red-600 text-white',  filter: 'promo' as const },
           ] as const).map((s) => {
             const active = statusFilter === s.filter;
             return (
@@ -883,7 +858,7 @@ export default function AdminPage() {
                     : 'border-gray-200 text-gray-500 hover:border-gray-400 bg-white',
                 )}
               >
-                {c === 'all' ? 'Tout' : c}
+                {c === 'all' ? 'Tout' : (CATEGORY_LABELS[c] ?? c)}
               </button>
             ))}
           </div>
@@ -896,8 +871,6 @@ export default function AdminPage() {
           >
             <option value="all">Tous les statuts</option>
             <option value="promo">En promo</option>
-            <option value="new">Nouveautés</option>
-            <option value="featured">En vedette</option>
           </select>
 
           {displayed.length !== products.length && (
@@ -905,12 +878,11 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Table — horizontally scrollable on small screens so the fixed-width
-            grid columns stay readable instead of overlapping. */}
-        <div className="bg-white border border-gray-100 overflow-x-auto">
-          <div className="min-w-[680px]">
+        {/* Table — responsive card layout on mobile, grid on desktop */}
+        <div className="bg-white border border-gray-100">
+          <div>
           {/* Header */}
-          <div className="grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+          <div className="hidden sm:grid sm:grid-cols-[56px_1fr_80px_auto_110px] gap-4 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
             {['', 'Produit', 'Prix', 'Statuts', 'Actions'].map((h) => (
               <span key={h} className="text-[9px] font-bold tracking-widest uppercase text-gray-400">{h}</span>
             ))}
@@ -921,16 +893,22 @@ export default function AdminPage() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 items-center px-4 py-3 border-b border-gray-50 last:border-b-0 animate-pulse"
+                  className="flex flex-col sm:grid sm:grid-cols-[56px_1fr_80px_auto_110px] gap-3 sm:gap-4 sm:items-center px-4 py-3 border-b border-gray-50 last:border-b-0 animate-pulse"
                 >
-                  <div className="w-12 h-14 bg-gray-100" />
-                  <div className="space-y-2">
-                    <div className="h-3 bg-gray-100 w-2/3" />
-                    <div className="h-2 bg-gray-100 w-1/3" />
+                  <div className="flex gap-3 sm:contents">
+                    <div className="w-12 h-14 bg-gray-100" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3 bg-gray-100 w-2/3" />
+                      <div className="h-2 bg-gray-100 w-1/3" />
+                    </div>
                   </div>
-                  <div className="h-3 bg-gray-100 w-10 ml-auto" />
-                  <div className="h-4 bg-gray-100 w-16" />
-                  <div className="h-4 bg-gray-100 w-20 ml-auto" />
+                  <div className="flex items-center justify-between sm:contents">
+                    <div className="h-3 bg-gray-100 w-10 sm:ml-auto" />
+                    <div className="flex items-center gap-2 sm:contents">
+                      <div className="h-4 bg-gray-100 w-16" />
+                      <div className="h-4 bg-gray-100 w-20 sm:ml-auto" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -988,8 +966,9 @@ export default function AdminPage() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
                   transition={{ duration: 0.15 }}
-                  className="grid grid-cols-[56px_1fr_80px_auto_110px] gap-4 items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                  className="flex flex-col sm:grid sm:grid-cols-[56px_1fr_80px_auto_110px] gap-3 sm:gap-4 sm:items-center px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors"
                 >
+                  <div className="flex gap-3 sm:contents">
                   {/* Thumb */}
                   <div className="w-12 h-14 bg-gray-100 overflow-hidden relative flex-shrink-0">
                     {p.images?.[0] ? (
@@ -1014,11 +993,11 @@ export default function AdminPage() {
                         <span className="text-[10px] text-gray-400">×1</span>
                       )}
                       <span className="text-[10px] text-gray-400 capitalize">{p.gender}</span>
-                      <span className="text-[10px] text-gray-400 capitalize hidden sm:inline">· {p.style}</span>
-                      <span className="text-[10px] text-gray-400 capitalize hidden sm:inline">· {CONDITION_LABELS[p.condition] ?? p.condition}</span>
                     </div>
                   </div>
+                  </div>
 
+                  <div className="flex items-center justify-between sm:contents mt-1 sm:mt-0">
                   {/* Price */}
                   <div className="text-right">
                     {p.isPromo && p.promoPrice ? (
@@ -1031,22 +1010,9 @@ export default function AdminPage() {
                     )}
                   </div>
 
+                  <div className="flex items-center gap-2 sm:contents">
                   {/* Toggles */}
                   <div className="flex items-center gap-0.5">
-                    <ToggleBtn
-                      active={!!p.isNewArrival}
-                      onClick={() => handleToggle(p.id, 'isNewArrival', !p.isNewArrival)}
-                      title={p.isNewArrival ? 'Nouvelle arrivée (actif)' : 'Marquer comme nouveauté'}
-                      activeColor="text-blue-600 bg-blue-50"
-                      icon={Sparkles}
-                    />
-                    <ToggleBtn
-                      active={!!p.isFeatured}
-                      onClick={() => handleToggle(p.id, 'isFeatured', !p.isFeatured)}
-                      title={p.isFeatured ? 'En vedette (actif)' : 'Mettre en vedette'}
-                      activeColor="text-purple-600 bg-purple-50"
-                      icon={Star}
-                    />
                     <ToggleBtn
                       active={!!p.isPromo}
                       onClick={() => handleToggle(p.id, 'isPromo', !p.isPromo)}
@@ -1057,7 +1023,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="flex items-center justify-end gap-1 border-l border-gray-100 pl-2 sm:border-none sm:pl-0">
                     <Link
                       href={`/product/${p.id}`}
                       target="_blank"
@@ -1081,6 +1047,8 @@ export default function AdminPage() {
                       <Trash2 size={13} />
                     </button>
                   </div>
+                  </div>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -1094,7 +1062,7 @@ export default function AdminPage() {
             <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold mb-0.5">Base de données vide</p>
-              <p className="text-xs">Le site utilise actuellement les données locales (<code>data/products.ts</code>). Ajoutez des produits ici pour les gérer via Firestore.</p>
+              <p className="text-xs">Firestore est vide — le site affichera une boutique vide. Cliquez sur &quot;Ajouter un produit&quot; pour créer votre première fiche.</p>
             </div>
           </div>
         )}

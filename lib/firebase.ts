@@ -18,7 +18,13 @@ let db: ReturnType<typeof getFirestore>;
 
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
-  db = initializeFirestore(app, { experimentalForceLongPolling: true });
+  // ignoreUndefinedProperties: never let a stray `undefined` field value crash a
+  // write — Firestore rejects them by default. Optional form fields (promoPrice,
+  // etc.) are simply skipped instead of throwing.
+  db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+    ignoreUndefinedProperties: true,
+  });
 } else {
   app = getApps()[0];
   db = getFirestore(app);

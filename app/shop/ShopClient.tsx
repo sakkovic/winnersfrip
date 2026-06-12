@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import ProductFilters from '@/components/ProductFilters';
-import { CONDITION_LABELS, PRICE_RANGES, CATEGORY_LABELS, DEPARTMENT_LABELS } from '@/lib/constants';
+import { PRICE_RANGES, CATEGORY_LABELS, DEPARTMENT_LABELS } from '@/lib/constants';
 import type { FilterState, SortOption, ProductDepartment, ProductCategory, Product } from '@/types';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -14,8 +14,8 @@ const ITEMS_PER_PAGE = 12;
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_FILTERS: FilterState = {
-  department: [], category: [], condition: [], origin: [], gender: [], style: [],
-  size: [], color: [], priceRange: [], promotions: false, newArrivals: false,
+  department: [], category: [], gender: [],
+  size: [], color: [], priceRange: [], promotions: false,
 };
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -34,22 +34,17 @@ function ActiveChips({ filters, search, onChange, onClearSearch, onReset }: {
   onReset: () => void;
 }) {
   const priceLabel = (v: string) => PRICE_RANGES.find((r) => r.value === v)?.label ?? v;
-  const condLabel  = (v: string) => CONDITION_LABELS[v] ?? v;
   const catLabel   = (v: string) => CATEGORY_LABELS[v] ?? v;
   const deptLabel  = (v: string) => DEPARTMENT_LABELS[v as keyof typeof DEPARTMENT_LABELS] ?? v;
 
   const chips: { key: string; label: string; remove: () => void }[] = [
     ...(search ? [{ key: 'q', label: `"${search}"`, remove: onClearSearch }] : []),
-    ...(filters.newArrivals ? [{ key: 'new', label: 'Nouveautés', remove: () => onChange({ ...filters, newArrivals: false }) }] : []),
     ...(filters.promotions ? [{ key: 'promo', label: 'En promo', remove: () => onChange({ ...filters, promotions: false }) }] : []),
     ...filters.department.map((d) => ({ key: `d-${d}`,  label: deptLabel(d), remove: () => onChange({ ...filters, department: filters.department.filter((x) => x !== d) }) })),
     ...filters.gender.map((g)     => ({ key: `g-${g}`,  label: g,            remove: () => onChange({ ...filters, gender:     filters.gender.filter((x) => x !== g) }) })),
     ...filters.category.map((c)   => ({ key: `c-${c}`,  label: catLabel(c),  remove: () => onChange({ ...filters, category:   filters.category.filter((x) => x !== c) }) })),
-    ...filters.condition.map((c)  => ({ key: `cd-${c}`, label: condLabel(c), remove: () => onChange({ ...filters, condition:  filters.condition.filter((x) => x !== c) }) })),
-    ...filters.style.map((s)      => ({ key: `s-${s}`,  label: s,            remove: () => onChange({ ...filters, style:      filters.style.filter((x) => x !== s) }) })),
     ...filters.color.map((c)      => ({ key: `col-${c}`,label: c,            remove: () => onChange({ ...filters, color:      filters.color.filter((x) => x !== c) }) })),
     ...filters.size.map((s)       => ({ key: `sz-${s}`, label: s,            remove: () => onChange({ ...filters, size:       filters.size.filter((x) => x !== s) }) })),
-    ...filters.origin.map((o)     => ({ key: `o-${o}`,  label: o === 'europe' ? 'Europe' : 'Local', remove: () => onChange({ ...filters, origin: filters.origin.filter((x) => x !== o) }) })),
     ...filters.priceRange.map((p) => ({ key: `p-${p}`,  label: priceLabel(p),remove: () => onChange({ ...filters, priceRange: filters.priceRange.filter((x) => x !== p) }) })),
   ];
 
@@ -153,10 +148,7 @@ export default function ShopClient({ initialProducts }: Props) {
     ...DEFAULT_FILTERS,
     department: searchParams.get('department') ? [searchParams.get('department') as ProductDepartment] : [],
     gender:     searchParams.get('gender')     ? [searchParams.get('gender')    as FilterState['gender'][number]] : [],
-    condition:  searchParams.get('condition')  ? [searchParams.get('condition') as FilterState['condition'][number]] : [],
-    style:      searchParams.get('style')      ? [searchParams.get('style')     as FilterState['style'][number]] : [],
     category:   searchParams.get('category')   ? [searchParams.get('category')  as ProductCategory] : [],
-    newArrivals: searchParams.get('new') === 'true',
   }));
   const [sort, setSort]   = useState<SortOption>('newest');
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
@@ -175,9 +167,6 @@ export default function ShopClient({ initialProducts }: Props) {
         department: searchParams.get('department') ? [searchParams.get('department') as ProductDepartment] : [],
         gender:     searchParams.get('gender')     ? [searchParams.get('gender')    as FilterState['gender'][number]] : [],
         category:   searchParams.get('category')   ? [searchParams.get('category')  as ProductCategory] : [],
-        condition:  searchParams.get('condition')  ? [searchParams.get('condition') as FilterState['condition'][number]] : [],
-        style:      searchParams.get('style')      ? [searchParams.get('style')     as FilterState['style'][number]] : [],
-        newArrivals: searchParams.get('new') === 'true',
       }));
     }
   }, [searchParams]);
@@ -189,7 +178,6 @@ export default function ShopClient({ initialProducts }: Props) {
 
   const filtered = useMemo(() => {
     let r = initialProducts;
-    if (filters.newArrivals)     r = r.filter((p) => p.isNewArrival);
     if (filters.promotions)      r = r.filter((p) => p.isPromo);
     if (search) {
       const q = search.toLowerCase();
@@ -201,10 +189,7 @@ export default function ShopClient({ initialProducts }: Props) {
     }
     if (filters.department.length) r = r.filter((p) => filters.department.includes(p.department));
     if (filters.category.length) r = r.filter((p) => filters.category.includes(p.category));
-    if (filters.condition.length)r = r.filter((p) => filters.condition.includes(p.condition));
-    if (filters.origin.length)   r = r.filter((p) => filters.origin.includes(p.origin));
     if (filters.gender.length)   r = r.filter((p) => filters.gender.includes(p.gender));
-    if (filters.style.length)    r = r.filter((p) => filters.style.includes(p.style));
     if (filters.size.length)     r = r.filter((p) => p.sizes.some((s) => filters.size.includes(s)));
     if (filters.color.length)    r = r.filter((p) => p.colors.some((c) => filters.color.includes(c)));
     if (filters.priceRange.length) {
@@ -233,10 +218,10 @@ export default function ShopClient({ initialProducts }: Props) {
   };
 
   const activeCount =
-    filters.department.length + filters.category.length + filters.condition.length + filters.origin.length +
-    filters.gender.length + filters.style.length + filters.size.length +
+    filters.department.length + filters.category.length +
+    filters.gender.length + filters.size.length +
     filters.color.length + filters.priceRange.length +
-    (filters.promotions ? 1 : 0) + (filters.newArrivals ? 1 : 0) +
+    (filters.promotions ? 1 : 0) +
     (search ? 1 : 0);
 
   return (

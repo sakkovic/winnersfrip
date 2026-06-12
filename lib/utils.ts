@@ -12,30 +12,29 @@ export function formatPrice(price: number, currency = CURRENCY): string {
   return `${price} ${currency}`;
 }
 
+/** Relative French time label, e.g. "il y a 3 mois", "à l'instant". */
+export function timeAgo(date: Date): string {
+  const s = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (!Number.isFinite(s) || s < 0) return '';
+  if (s < 60) return "à l'instant";
+  const mins = Math.floor(s / 60);
+  if (mins < 60) return `il y a ${mins} min`;
+  const hours = Math.floor(s / 3600);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.floor(s / 86400);
+  if (days < 30) return `il y a ${days} j`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `il y a ${months} mois`;
+  const years = Math.floor(days / 365);
+  return `il y a ${years} an${years > 1 ? 's' : ''}`;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-export function conditionLabel(condition: string): string {
-  const map: Record<string, string> = {
-    neuf: 'Neuf',
-    comme_neuf: 'Comme Neuf',
-    seconde_main: 'Seconde Main',
-  };
-  return map[condition] ?? condition;
-}
-
-export function conditionColor(condition: string): string {
-  const map: Record<string, string> = {
-    neuf: 'bg-emerald-100 text-emerald-800',
-    comme_neuf: 'bg-sky-100 text-sky-800',
-    seconde_main: 'bg-amber-100 text-amber-800',
-  };
-  return map[condition] ?? 'bg-gray-100 text-gray-800';
 }
 
 /**

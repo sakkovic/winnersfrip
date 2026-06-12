@@ -19,7 +19,7 @@ export default function TermsPage() {
         <h2 className="font-display text-2xl mb-3 text-brand-black not-italic">1. Objet</h2>
         <p className="text-sm text-gray-600 leading-relaxed">
           Les présentes conditions régissent l&apos;utilisation du site Winners
-          Superfrip et le service de réservation d&apos;articles en vue d&apos;un
+          Mode et le service de réservation d&apos;articles en vue d&apos;un
           retrait en boutique à Monastir, Tunisie.
         </p>
       </section>

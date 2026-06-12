@@ -120,9 +120,9 @@ export default function Navbar() {
               <Image
                 src="/logo.png"
                 alt="Winners Mode"
-                width={120}
-                height={48}
-                className="h-10 w-auto object-contain transition-transform duration-500 ease-expo-out group-hover:scale-[1.04]"
+                width={1200}
+                height={545}
+                className="h-12 sm:h-14 w-auto object-contain transition-transform duration-500 ease-expo-out group-hover:scale-[1.04]"
                 priority
               />
             </Link>
@@ -283,7 +283,7 @@ export default function Navbar() {
                 ))}
               </nav>
 
-              <div className="p-5 border-t border-gray-100 space-y-3">
+              <div className="px-5 pt-5 pb-12 border-t border-gray-100 space-y-3">
                 <Link
                   href={currentUser ? '/account' : '/login'}
                   className="flex items-center gap-2 text-sm text-gray-700 hover:text-brand-warm transition-colors"
